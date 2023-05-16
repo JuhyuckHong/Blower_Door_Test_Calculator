@@ -50,3 +50,6 @@ Thumbs.db
 
 # 가상환경
 myenv/
+
+# git
+.git/
