@@ -112,19 +112,26 @@ class BlowerDoorTestCalculator:
         self.val["t"] = t.ppf(1 - self.val["alpha"], self.val["N"] - 2)
         # 95% confidence value of n, 𝐼_𝑛
         self.val["margin of error of n"] = self.val["variance of n"] * self.val["t"]
+        self.val["n range"] = [self.val["n"] - self.val["margin of error of n"],
+                               self.val["n"] + self.val["margin of error of n"]]
         # 95% confidence value of ln⁡(𝐶), 𝐼_ln⁡(𝐶)
         self.val["margin of error of ln(C)"] = self.val["variance of ln(C)"] * self.val["t"]
+        self.val["C range"] = [self.val["C"]*math.exp(-self.val["margin of error of ln(C)"]),
+                               self.val["C"]*math.exp(+self.val["margin of error of ln(C)"])]
 
     # volumetric flow rate(㎥/s) for certain pressure
     def volumetric_flow_rate(self, dp=50):
         # vfra = volumetric_flow_rate_air
         vfra = self.val["C at STP"] * math.pow(dp, self.val["n"])
-        # moey = margin_of_error_of_y 
+        # 95% confidence
+        vfra_min = self.val["C range"][0] * math.pow(dp, self.val["n range"][0])
+        vfra_max = self.val["C range"][1] * math.pow(dp, self.val["n range"][1])
+        # 95% prediction, moey = margin_of_error_of_y 
         moey = self.val["t"] * self.val["variance of n"] \
                             * math.sqrt(self.val["variance of x"] * (self.val["N"] - 1) / \
                                         self.val["N"] + math.pow(math.log(dp) - self.val["mean x"], 2)) 
         self.val["margin of error of y"] = moey
-        return [vfra, vfra * math.exp(-moey), vfra * math.exp(moey)]
+        return [vfra, vfra * math.exp(-moey), vfra * math.exp(moey), vfra_min, vfra_max]
 
     def calculate_results(self):
         self.calculate_interim_values()
@@ -154,8 +161,10 @@ results = calculator.calculate_results()
 
 # 결과 출력
 for i in results.keys():
-    if i in ["ACH50", "R^2", "n","C at STP"]:
+    if i in ["N", "ACH50", "R^2", "n","C at STP", "n range", "C range"]:
         print(f"{i}: {results[i]}")
+
+#pprint(results)
 
 from graph_plotter import plot_graph
 
