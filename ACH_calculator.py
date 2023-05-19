@@ -8,6 +8,8 @@ from scipy.stats import t
 
 '''
 measured_data = {"interior_volume": float,          # (㎥)
+                 "initial_zero_pressure": 0,        # (Pa)
+                 "final_zero_pressure": 0,          # (Pa)
                  "temperature": float,              # (℃)
                  "relative_humidity": float,        # (%)
                  "atmospheric_pressure": float,     # (Pa)
@@ -27,9 +29,14 @@ class BlowerDoorTestCalculator:
         self.temperature = measured_data["temperature"]
         self.relative_humidity = measured_data["relative_humidity"]
         self.atmospheric_pressure = measured_data["atmospheric_pressure"]
-        self.measured_values = measured_data["measured_value"]
         # 계산 결과 저장을 위한 변수
         self.val = dict()
+        # PWM duty to Volumetric Flow rate calculation
+        self.slope = 0.0801
+        self.intercept = 3.59
+        # 풍량 측정 값 저장
+        self.measured_values = [[i, (self.slope * j + self.intercept)*60] for i, j in measured_data["measured_value"]]
+
 
     @classmethod
     def from_file(cls, file_path):
@@ -47,7 +54,7 @@ class BlowerDoorTestCalculator:
         self.val["alpha"] = 0.025
         
         # 𝑥_𝑖 = ln⁡(∆𝑃_𝑖)
-        self.val["x"] = [math.log(i) for i, j in self.measured_values]
+        self.val["x"] = [math.log(i) for i, _ in self.measured_values]
         self.val["mean x"] = statistics.mean(self.val["x"])
         self.val["average of x"] = statistics.mean(self.val["x"])
         self.val["deviation of x"] = [x - self.val["average of x"] for x in self.val["x"]]
@@ -56,7 +63,7 @@ class BlowerDoorTestCalculator:
         self.val["mean squared of x"] = statistics.mean([i**2 for i in self.val["x"]])
         
         # 𝑦_𝑖 = ln⁡(𝑉 ̇_𝑖)
-        self.val["y"] = [math.log(j) for i, j in self.measured_values]
+        self.val["y"] = [math.log(j) for _, j in self.measured_values]
         self.val["mean y"] = statistics.mean(self.val["y"])
         self.val["average of y"] = statistics.mean(self.val["y"])
         self.val["deviation of y"] = [x - self.val["average of y"] for x in self.val["y"]]
@@ -130,11 +137,12 @@ class BlowerDoorTestCalculator:
         self.val["volumetric flow rate"] = self.volumetric_flow_rate
 
         # SST(Total Sum of Squares)
-        self.val["SST"] = sum([(i - self.val["mean y"])**2 for [_, i] in self.val["measured values"]])
+        mean_of_vfra = statistics.mean([j for [_,j] in self.val["measured values"]])
+        self.val["SST"] = sum([(j - mean_of_vfra)**2 for [_, j] in self.val["measured values"]])
         # SSE(Explained Sum of Square)
-        self.val["SSE"] = sum([(self.volumetric_flow_rate(i)[0] - self.val["mean y"])**2 for [i, _] in self.val["measured values"]])
+        self.val["SSR"] = sum([(j - self.volumetric_flow_rate(i)[0])**2 for [i, j] in self.val["measured values"]])
         # R-squared
-        self.val["R^2"] = self.val["SSE"] / self.val["SST"]
+        self.val["R^2"] = 1 - (self.val["SSR"] / self.val["SST"])
 
         return self.val
     
@@ -145,7 +153,9 @@ calculator = BlowerDoorTestCalculator.from_file('data_20230515_142310.json')
 results = calculator.calculate_results()
 
 # 결과 출력
-pprint(results)
+for i in results.keys():
+    if i in ["ACH50", "R^2", "n","C at STP"]:
+        print(f"{i}: {results[i]}")
 
 from graph_plotter import plot_graph
 
