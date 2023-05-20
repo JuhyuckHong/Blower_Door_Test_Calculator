@@ -132,6 +132,15 @@ class BlowerDoorTestCalculator:
                                         self.val["N"] + math.pow(math.log(dp) - self.val["mean x"], 2)) 
         self.val["margin of error of y"] = moey
         return [vfra, vfra * math.exp(-moey), vfra * math.exp(moey), vfra_min, vfra_max]
+    
+    # reverse function of volumetric_flow_rate
+    def reverse_vfra(self, vfra):
+        # vfra = volumetric_flow_rate_air
+        vfra_min = vfra / math.exp(-self.val["margin of error of y"])
+        vfra_max = vfra / math.exp(+self.val["margin of error of y"])
+        dp_min = math.pow(vfra_min / self.val["C at STP"], 1 / self.val["n"])
+        dp_max = math.pow(vfra_max / self.val["C at STP"], 1 / self.val["n"])
+        return [dp_min, dp_max]
 
     def calculate_results(self):
         self.calculate_interim_values()
@@ -142,6 +151,8 @@ class BlowerDoorTestCalculator:
         self.val["ACH50"] = self.val["volumetric flow rate of Air at 50Pa"][0] / self.interior_volume
         # save function to calculate air leakage/infiltration
         self.val["volumetric flow rate"] = self.volumetric_flow_rate
+        # save function to calculate dp at certain vfra
+        self.val["reverse vfra"] = self.reverse_vfra
 
         # SST(Total Sum of Squares)
         mean_of_vfra = statistics.mean([j for [_,j] in self.val["measured values"]])
