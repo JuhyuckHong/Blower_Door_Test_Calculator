@@ -175,9 +175,15 @@ for i in results.keys():
     if i in ["N", "ACH50", "R^2", "n","C at STP", "n range", "C range"]:
         print(f"{i}: {results[i]}")
 
-#pprint(results)
+pprint(results)
 
-from graph_plotter import plot_graph
+from graph_plotter import plot_graph, create_report
 
 # 그래프 그리기
-plot_graph(results)
+#plot_graph(results)
+# 보고서 텍스트
+text = """
+여기에 보고서 텍스트를 작성하십시오. 
+이 텍스트는 그림의 상단에 표시됩니다.
+"""
+create_report(results, text)

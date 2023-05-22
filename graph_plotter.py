@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from matplotlib import font_manager
 from matplotlib.lines import Line2D
 import matplotlib.ticker as ticker
@@ -22,16 +23,16 @@ def log_scale_value(start, end, percent):
 
 
 def plot_graph(results):
-    # 폰트 설정
-    font_path = './NanumSquare_acL.ttf'
-    font_name = font_manager.FontProperties(fname=font_path).get_name()
-    plt.rc('font', family=font_name)
+    # # 폰트 설정
+    # font_path = './NanumSquare_acL.ttf'
+    # font_name = font_manager.FontProperties(fname=font_path).get_name()
+    # plt.rc('font', family=font_name)
 
-    # 창 크기 고정 - 픽셀 단위
-    width_px = 600  
-    height_px = 500  
-    dpi = 80  # 인치당 픽셀 (dots per inch)
-    plt.figure(figsize=(width_px/dpi, height_px/dpi))
+    # # 창 크기 고정 - 픽셀 단위
+    # width_px = 2400  
+    # height_px = 1500  
+    # dpi = 300  # 인치당 픽셀 (dots per inch)
+    # #plt.figure(figsize=(width_px/dpi, height_px/dpi))
 
     # x 축 설정
     plt.xscale("log")
@@ -45,7 +46,7 @@ def plot_graph(results):
     # y 축 설정
     plt.yscale("log")
     plt.yticks([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
-               [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000])
+               [100, 200, 300, 400, 500, 600, 700, 800, 900, '1,000'])
     plt.tick_params(axis='y', direction='in')
     y_lim_min = 100
     y_lim_max = 1000
@@ -56,9 +57,9 @@ def plot_graph(results):
     Q50 = results["volumetric flow rate"](Pa_50)[0]
     # 측정값
     x_values, y_values = zip(*results["measured values"])
-    # 계산값
+    # 계산값(ci=95%신뢰구간, pi=95%예측구간)
     x = range(int(min(x_values) - 4), int(max(x_values) + 15))
-    y, y_pi_l, y_pi_u, y_ci_l, y_ci_u = zip(*[results["volumetric flow rate"](i) for i in x])
+    y, y_ci_l, y_ci_u, y_pi_l, y_pi_u = zip(*[results["volumetric flow rate"](i) for i in x])
 
     # 그래프 그리기 옵션들
     scatter_params = {
@@ -69,48 +70,55 @@ def plot_graph(results):
     }
 
     derived_params = {
-        'label': f"Q={results['C at STP']:.2f}ΔP^{results['n']:.2f}",
-        'color': 'blue',
+        'label': f"Q = {results['C at STP']:.2f}·ΔP^{results['n']:.2f}",
+        'color': (1,0,0,0.8),
         'linewidth': 1.5,
-        'alpha': 1
-    }
-
-    pi_params = {
-        'color': 'green',
-        'linewidth': 0.5,
         'alpha': 1,
-        'linestyle': '-'
+        'zorder': 9
     }
 
     ci_params = {
+        'color': 'green',
+        'linewidth': 0.5,
+        'alpha': 1,
+        'linestyle': '-',
+        'zorder': 8
+    }
+
+    pi_params = {
         'color': 'blue',
         'linewidth': 0.1,
         'alpha': 1,
-        'linestyle': '-'
-    }
-
-    fill_params_PI = {
-        'color': 'green',
-        'alpha': 0.2
-    }
-
-    fill_patch_PI = {
-        'facecolor': 'green',
-        'alpha': 0.2,
-        'label': '95% Prediction Band'
+        'linestyle': '-',
+        'zorder': 8
     }
 
     fill_params_CI = {
-        'color': 'grey',
-        'alpha': 0.1,
-        'hatch': '\\'
+        'color': 'green',
+        'alpha': 0.2,
+        'zorder': 8
     }
 
     fill_patch_CI = {
+        'facecolor': 'green',
+        'alpha': 0.2,
+        'label': '95% Confidence Region',
+        'zorder': 9
+    }
+
+    fill_params_PI = {
+        'color': 'grey',
+        'alpha': 0.1,
+        'hatch': '\\',
+        'zorder': 8
+    }
+
+    fill_patch_PI = {
         'color': 'grey',
         'hatch': '\\',
         'alpha': 0.1,
-        'label': '95% Confidence Region'
+        'label': '95% Prediction Band',
+        'zorder': 8
     }
 
 
@@ -128,7 +136,7 @@ def plot_graph(results):
     plt.grid(True, which="both", linestyle="--", linewidth=1, color="gray", alpha=0.5)
 
     # 축 레이블 설정
-    plt.xlabel('내외부 압력차 [Pa]', labelpad=20)
+    plt.xlabel('압력차 [Pa]', labelpad=15)
     plt.ylabel('침기량\n(누기량)\n[㎥/s]', rotation='horizontal', labelpad=20, linespacing=2)
 
     # 제목 설정
@@ -139,13 +147,13 @@ def plot_graph(results):
     
     # 기존 범례 가져오기
     handles, labels = plt.gca().get_legend_handles_labels()
-    # 채우기 범례 생성
-    fill_pi = mpatches.Patch(**fill_patch_PI)
-    handles.append(fill_pi)
-    labels.append(fill_pi.get_label())
+    # 채우기(95% 신뢰, 예측) 범례 생성
     fill_ci = mpatches.Patch(**fill_patch_CI)
     handles.append(fill_ci)
     labels.append(fill_ci.get_label())    
+    fill_pi = mpatches.Patch(**fill_patch_PI)
+    handles.append(fill_pi)
+    labels.append(fill_pi.get_label())
 
     # 범례 표시
     plt.legend(handles, labels, loc="upper left")
@@ -156,33 +164,32 @@ def plot_graph(results):
     # Mark Q50
     plt.plot(Pa_50, Q50, 'ro', markersize=2, zorder=11)
     
-    # 확대 할 범위 계산
-    y_at_50 = Q50
-    #x_range = 
-    #y_range = 
+    # 확대 할 범위 계산 x=Q50값을 
     x_closeup_start = results['reverse vfra'](Q50)[1]
     x_closeup_end = results['reverse vfra'](Q50)[0]
     y_closeup_start = results["volumetric flow rate"](Pa_50)[1]
     y_closeup_end = results["volumetric flow rate"](Pa_50)[2]
 
-    # 보조 플롯 위치, 크기 설정
+    # 활대 플롯 위치, 크기 설정
     left = 0.58
     bottom = 0.2
     width = 0.25
-    height = 0.25
+    height = 0.10
 
-    # 확대 영역 그리기
+    # 확대 플롯 위치 사각형 그리기
     rect = patches.Rectangle((x_closeup_start, y_closeup_start), 
                               x_closeup_end - x_closeup_start, 
                               y_closeup_end - y_closeup_start, 
                               linewidth=1, edgecolor='r', facecolor='none')
     plt.gca().add_patch(rect)
 
+    # 확대 플롯 화살표 그리기
+    ## 화살표 좌표값 계산
     x1 = log_scale_value(x_lim_min, x_lim_max, left + width/2 + 0.03)
-    y1 = log_scale_value(y_lim_min, y_lim_max, bottom + height - 0.05)
+    y1 = log_scale_value(y_lim_min, y_lim_max, (bottom + height)*1.45)
     x2 = (x_closeup_start + x_closeup_end)/2
     y2 = y_closeup_start
-
+    ## 화살표 그리기
     plt.annotate('',  # 표시할 텍스트 
                 xy=(x1, y1),  # 화살표 머리 위치
                 xytext=(x2, y2),  # 화살표 꼬리 위치
@@ -191,25 +198,25 @@ def plot_graph(results):
                                 arrowstyle='->')
     )
 
-
+    # 확대 플롯 위치
     ax = plt.axes([left, bottom, width, height]) 
 
-    # 축 설정
+    # 활대 플롯 축 설정
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlim(x_closeup_start, 
                 x_closeup_end)
-    ax.set_ylim(y_closeup_start-1, 
-                y_closeup_end+1)
+    ax.set_ylim(y_closeup_start - (Q50 - y_closeup_start)*0.1, 
+                y_closeup_end + (y_closeup_end - Q50)*0.1)
 
-    # 보조 플롯 틱
+    # 확대 플롯 틱
     ax.set_xticks([Pa_50], [""])
     ax.set_yticks([y_closeup_start, 
                    y_closeup_end], 
                   [f'{y_closeup_start:.0f}',
                    f'{y_closeup_end:.0f}'])
 
-    # 그리기
+    # 확대 플롯 그리기
     ax.plot(x, y, **derived_params)
     ax.plot(x, y_pi_l, **ci_params)
     ax.plot(x, y_pi_u, **ci_params)
@@ -222,41 +229,85 @@ def plot_graph(results):
     # 신뢰구간 사이 영역 색칠
     ax.fill_between(x, y_ci_l, y_ci_u, **fill_params_CI)
 
-    # Inside the subplot section
+    # 자동생성 틱 삭제
     ax.yaxis.set_minor_locator(plt.NullLocator())
     ax.xaxis.set_minor_locator(plt.NullLocator())
 
-    # tick inside
-    ax.tick_params(axis='both', which='both', pad=5, labelcolor='red', direction='in')
-    ax.tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True, labeltop=False)
-    ax.tick_params(axis='y', which='both', left=False, right=True, labelleft=False, labelright=True)
+    # 틱 설정
+    ax.tick_params(axis='both', which='both', pad=5, labelcolor='red', direction='inout')
+    ax.tick_params(axis='x', which='both', bottom=1, top=0, labelbottom=1, labeltop=0)
+    ax.tick_params(axis='y', which='both', left=0, right=1, labelleft=0, labelright=1)
+    
     # 축 설정
     ax.tick_params(axis='both', which='both', pad=5)
     ax.tick_params(axis='both', which='both', labelcolor='black')
-    ax.tick_params(axis='both', which='both', width=0, length=0)
+    ax.tick_params(axis='both', which='both', width=1, length=5)
 
-    # Mark Q50,
+    ## 계산된 Q50과 95% 신뢰값 표시
+    ### Q50
+    marker_size = 50
     Pa_50_value = Pa_50
     offset_x = (x_closeup_end - Pa_50)/10
     offset_y = (y_closeup_end - Q50)/5    
-    ax.plot(Pa_50_value, Q50, 'ro', zorder=11)
+    ax.scatter(Pa_50_value, Q50, s=marker_size, color='blue', marker=(5,1), zorder=11)
     ax.text(Pa_50_value + offset_x, Q50 - offset_y,
-             f'({Pa_50_value}, {Q50:.2f})')
-    
-    # Mart 95% prediction Q50
-    ax.plot(Pa_50_value, y_closeup_end, 'b^', zorder=11)
-    ax.plot(Pa_50_value, y_closeup_start, 'bv', zorder=11)
+            f'{Q50:.2f}㎥/s',
+            weight='bold',
+            bbox=dict(facecolor=(0.9, 0.9, 0.7, 0.5), 
+                      edgecolor=(0.5, 0.9, 0.5, 0.5), 
+                      pad=0.1, 
+                      boxstyle='round,pad=0.3'))
+    ### 95% 신뢰값 Q50
+    ax.scatter(Pa_50_value, y_closeup_end, color='blue', marker='_', s=marker_size, zorder=11)
+    ax.scatter(Pa_50_value, y_closeup_start, color='blue', marker='_', s=marker_size, zorder=11)
 
-    # Add vertical line at y = results["volumetric flow rate"](50)[0]
-    ax.axhline(y=Q50, color='red', linewidth=1.5, linestyle=':')
-    # Add vertical line at x = 50
-    ax.axvline(x=Pa_50, color='red', linewidth=1.5, linestyle=':')
+    # x = 50 세로줄 긋기
+    ax.axvline(x=Pa_50, color='red', linewidth=1, linestyle='--')
 
     # 레이블 배경 설정
     labels = ax.get_xticklabels() + ax.get_yticklabels()  # X와 Y 레이블 모두 가져오기
     plt.setp(labels, backgroundcolor=(1,1,1,0.7))  # 배경색을 흰색으로 설정
 
     # 그래프 보이기
-    plt.show(block=False)
-    plt.pause(3600)
+    # plt.show(block=False)
+    # from datetime import datetime
+    # now = datetime.now().strftime("%d%m%Y-%H%M%S")
+    # plt.savefig(f'test_results_{now}.png', dpi=300, bbox_inches='tight')
+    # plt.pause(3600)
+
+# 보고서 작성
+def create_report(results, text):
+
+    # 폰트 설정
+    font_path = './NanumSquare_acL.ttf'
+    font_name = font_manager.FontProperties(fname=font_path).get_name()
+    plt.rc('font', family=font_name)
+
+    # 창 크기 고정 - 픽셀 단위
+    width_px = 2481  
+    height_px = 3507  
+    dpi = 300  # 인치당 픽셀 (dots per inch)
+    plt.figure(figsize=(width_px/dpi, height_px/dpi))
+
+    # Gridspec을 사용하여 플롯과 텍스트 영역을 분할
+    gs = GridSpec(2, 1, height_ratios=[1, 1])
+
+    # 텍스트 영역
+    plt.subplot(gs[0])
+    plt.axis('off')
+    plt.text(0.5, 0.5, text, ha='center', va='center', wrap=True)
+
+    # 플롯 영역
+    plt.subplot(gs[1])
+    plot_graph(results)
+
+    # 그래프 저장
+    from datetime import datetime
+    now = datetime.now().strftime("%d%m%Y-%H%M%S")
+    plt.savefig(f'test_results_{now}.png', dpi=300, bbox_inches='tight')
+
+    # 그래프 보이기
+    plt.show()
+
+
 
