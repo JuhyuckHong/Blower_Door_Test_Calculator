@@ -8,9 +8,16 @@ def get_duty(target, delay, average_time, control_limit):
     duty = 0
 
     # 수렴 조건
-    converged_time = 0
-    threshold = target/10
+    convergence_time = 0
+    convergence_threshold = target/10
     duration = 10
+
+    # 실패 조건
+    failure_time = 0
+    failure_threshold = 10
+
+    # 종료 측정 조건
+    final_measure_time = 5
 
     # PID 컨트롤러 생성
     pid = PID(1, 0, 0, setpoint=target)
@@ -22,9 +29,10 @@ def get_duty(target, delay, average_time, control_limit):
         time_start = time.time()
         # PID 계산
         control = pid(current)
-        # duty 업데이트
-        duty += control
-        # duty 값 세팅
+        # duty 업데이트 및 상하한 설정
+        duty += control 
+        duty = max(0, min(100, duty))
+        # duty 값 적용
         measurement.duty_set(duty)
         # 압력 변화 대기
         time.sleep(delay)
@@ -34,12 +42,27 @@ def get_duty(target, delay, average_time, control_limit):
         time_diff = time.time() - time_start
         # 오차
         error = abs(target - current)
-        if error < threshold:
-            converged_time += time_diff
+        if error < convergence_threshold:
+            convergence_time += time_diff
         else:
-            converged_time = 0
+            convergence_time = 0
         
-        if converged_time >= duration:
-            break
-    
-    return duty
+        if convergence_time >= duration:
+            current = measurement.pressure_read(final_measure_time)
+            return (duty, True, current)
+
+        # duty 100으로 설정해도 목표 압력에 도달하지 못하는 경우
+        if duty == 100 and error > failure_threshold:
+            failure_time += time_diff
+        else:
+            failure_time = 0
+
+        # duty 0으로 설정해도 목표 압력 값을 초과하는 경우
+        if duty == 0 and error > failure_threshold:
+            failure_time += time_diff
+        else:
+            failure_time = 0
+
+        if failure_time >= duration:
+            current = measurement.pressure_read(final_measure_time)
+            return (duty, False, current)
