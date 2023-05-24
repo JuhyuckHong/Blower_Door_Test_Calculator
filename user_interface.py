@@ -1,6 +1,7 @@
 import sys
 import json
 import time
+import shutil
 import random
 import ACH_calculator, graph_plotter, reporting
 from datetime import datetime
@@ -115,7 +116,7 @@ class InputInitalValues(QWidget):
         with open("conditions.json", "w") as file:
             json.dump(data, file, indent=4)
         # json으로 저장 (백업용)
-        now = datetime.now().strftime("%d%m%Y-%H%M%S")
+        now = datetime.now().strftime("%y%m%d-%H%M%S")
         with open(f"./conditions/conditions_{now}.json", "w") as file:
             json.dump(data, file, indent=4)
         # 종료
@@ -324,7 +325,7 @@ class BackgroundTask(QThread):
             # 결과 계산
             results_depr = depressureization.calculate_results()
             # Raw data 저장
-            now = datetime.now().strftime("%d%m%Y-%H%M%S")
+            now = datetime.now().strftime("%y%m%d-%H%M%S")
             with open(f"./calculations/depressurization_{now}.json", 'w') as file:
                 json.dump(results_depr, file, indent=4)
             # 결과 값 변수 저장
@@ -345,7 +346,7 @@ class BackgroundTask(QThread):
             # 결과 계산
             results_pres = pressureization.calculate_results()
             # Raw data 저장
-            now = datetime.now().strftime("%d%m%Y-%H%M%S")
+            now = datetime.now().strftime("%y%m%d-%H%M%S")
             with open(f"./calculations/pressurization_{now}.json", 'w') as file:
                 json.dump(results_pres, file, indent=4)
             # 결과 값 변수 저장
@@ -375,34 +376,49 @@ class BackgroundTask(QThread):
         conditions = 'conditions.json'
         with open(conditions, 'r') as file:
             conditions = json.load(file)
+
         # 계산 결과 불러오기
         with open(f"./calculation_raw.json", 'r') as file:
             calculation_raw = json.load(file)
-        # 그리기
+
         if conditions.get("depressurization") and conditions.get("pressurization"):
-            graph_plotter.plot_graph(calculation_raw['depressurization'], calculation_raw['pressurization'])
+            graph_plotter.plot_graph(calculation_raw['depressurization'],
+                                     calculation_raw['pressurization'],
+                                     calculation_raw['report'])
         elif conditions.get("depressurization"):
-            graph_plotter.plot_graph(calculation_raw['depressurization'], False)
+            graph_plotter.plot_graph(calculation_raw['depressurization'],
+                                     False,
+                                     calculation_raw['report'])
         elif conditions.get("pressurization"):
-            graph_plotter.plot_graph(False, calculation_raw['pressurization'])
-        print(f"{self.task_type} is done.")
+            graph_plotter.plot_graph(False,
+                                     calculation_raw['pressurization'],
+                                     calculation_raw['report'])
 
     def reporting(self):
         # 템플릿 파일 이름
         template_path = "report_template.xlsx"
         # 결과 파일 명
-        now = datetime.now().strftime("%d%m%Y-%H%M%S")
+        now = datetime.now().strftime("%y%m%d-%H%M%S")
         output_path = f"report_{now}.xlsx"
         # 이미지 정보
         image_path = "graph.png"
-        cell = "B30"
+        cell = "B28"
         width = 590
         height = 355
         # 파일 보호 비밀번호
         key = "asdf"
         report_maker = reporting.ReportMaker(template_path)
         report_maker.process_report(output_path, image_path, cell, width, height, key)
+        
         print(f"{self.task_type} is done.")
+
+        # PDF 파일 만들고 열기
+        import platform
+        if platform.system() == "Linux":
+            import subprocess as sub
+            sub.call(f"libreoffice --headless --convert-to pdf {output_path}", shell=True)
+            shutil.move(output_path.split('.')[0] + '.pdf', "report.pdf")
+            sub.call(f"xpdf ./report.pdf")
 
 
 if __name__ == '__main__':
