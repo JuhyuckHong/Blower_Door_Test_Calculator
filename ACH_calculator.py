@@ -1,21 +1,21 @@
 import math
 import json
 import statistics
-import os
 from pprint import pprint
 from scipy.stats import t
+from datetime import datetime
 
 
 '''
-measured_data = {"interior_volume": float,          # (㎥)
+measured_data = {
                  "initial_zero_pressure": 0,        # (Pa)
                  "final_zero_pressure": 0,          # (Pa)
                  "temperature": float,              # (℃)
                  "relative_humidity": float,        # (%)
                  "atmospheric_pressure": float,     # (Pa)
                  "measured_value": [
-                   (∆P_i: float,                    # (Pa)
-                    V ̇_i: float)                    # (㎥/s)
+                   [∆P_i: float,                    # (Pa)
+                    V ̇_i: float], ...               # (㎥/h)
                    ]
                  }
 '''
@@ -25,10 +25,10 @@ class BlowerDoorTestCalculator:
         # 측정 값
         self.measured_data = measured_data
         # 측정 값 변수 저장
-        self.interior_volume = measured_data["interior_volume"]
-        self.temperature = measured_data["temperature"]
-        self.relative_humidity = measured_data["relative_humidity"]
-        self.atmospheric_pressure = measured_data["atmospheric_pressure"]
+        self.interior_volume = float(measured_data["interior volume"])
+        self.temperature = float(measured_data["temperature"])
+        self.relative_humidity = float(measured_data["relative_humidity"])
+        self.atmospheric_pressure = float(measured_data["atmospheric_pressure"])
         # 계산 결과 저장을 위한 변수
         self.val = dict()
         # PWM duty to Volumetric Flow rate calculation
@@ -39,10 +39,12 @@ class BlowerDoorTestCalculator:
 
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, file_path, conditions="conditions.json"):
         # 측정 값 저장된 file 활용 시
         with open(file_path, 'r') as file:
             data = json.load(file)
+        with open(conditions, 'r') as file:
+            data.update(json.load(file))
         return cls(data)
         
     # 중간 값 계산
@@ -85,21 +87,21 @@ class BlowerDoorTestCalculator:
         self.val["P"] = self.atmospheric_pressure
         self.val["H"] = self.relative_humidity/100
 
-        # density(㎥/kg), 𝜌_𝑆𝑇𝑃 
-        self.val["density at STP"] = 1.191887378
+        # density(㎥/kg), 𝜌_𝑆𝑇𝑃 where STP: 23 degree celcius, 1atm
+        self.val["density at STP"] = 1.1919
         # Partial Pressure(Pa), 𝑃_𝑣𝑠=e^(59.484085−6790.4985/T−5.02802 ln⁡(𝑇))
         self.val["partial pressure"] = self.val["H"] * math.exp(59.484085 - (6790.4985 / self.val["T"])\
                                                                 - 5.02802 * math.log(self.val["T"]))
         # density(㎥/kg), 𝜌_𝑎𝑖𝑟 = (𝑃_𝑏𝑎𝑟−0.37802∅𝑃_𝑣𝑠)/287.055𝑇 
         self.val["density of air"] = (self.val["P"] - 0.37802 * self.val["partial pressure"]) / (287.055 * self.val["T"])
         # viscousity(Pa·s), 𝜇_𝑆𝑇𝑃 (not sure)
-        self.val["viscousity at STP"] = 0.0000183
+        self.val["viscousity at STP"] = 0.00001827
         # viscousity(Pa·s) of air, 𝜇_𝑎𝑖𝑟=(𝑏𝑇^0.5)/(1+𝑠/𝑇)
         self.val["viscousity of air"] = (0.000001458 * math.sqrt(self.val["T"]) ) / (1 + 110.4/self.val["T"])
         
-        # 𝐶_𝑆𝑇𝑃 = 𝐶_0 from 𝐶_0/𝐶=(𝜇/𝜇_𝑆𝑇𝑃)^(2𝑛−1)×(𝜌/𝜌_𝑆𝑇𝑃)^(1−𝑛)
-        self.val["C at STP"] = self.val["C"] * math.pow(self.val["viscousity of air"]/self.val["viscousity at STP"], 2*self.val["n"] - 1)\
-                                * math.pow(self.val["density of air"]/self.val["density at STP"], 1- self.val["n"])
+        # 𝐶_0 from 𝐶_0/𝐶=(𝜇/𝜇_𝑆𝑇𝑃)^(2𝑛−1)×(𝜌/𝜌_𝑆𝑇𝑃)^(1−𝑛)
+        self.val["C0"] = self.val["C"] * math.pow(self.val["viscousity of air"]/self.val["viscousity at STP"], 2*self.val["n"] - 1)\
+                                       * math.pow(self.val["density of air"]/self.val["density at STP"], 1- self.val["n"])
 
     def calculate_variance_and_confidence_values(self):
         # variance of 𝑛, 𝑠_𝑛
@@ -118,14 +120,18 @@ class BlowerDoorTestCalculator:
         self.val["margin of error of ln(C)"] = self.val["variance of ln(C)"] * self.val["t"]
         self.val["C range"] = [self.val["C"]*math.exp(-self.val["margin of error of ln(C)"]),
                                self.val["C"]*math.exp(+self.val["margin of error of ln(C)"])]
+        self.val["C0 range"] = [self.val["C range"][0] * math.pow(self.val["viscousity of air"]/self.val["viscousity at STP"], 2*self.val["n"] - 1)\
+                                * math.pow(self.val["density of air"]/self.val["density at STP"], 1- self.val["n"]),
+                                self.val["C range"][1] * math.pow(self.val["viscousity of air"]/self.val["viscousity at STP"], 2*self.val["n"] - 1)\
+                                * math.pow(self.val["density of air"]/self.val["density at STP"], 1- self.val["n"])]
 
-    # volumetric flow rate(㎥/s) for certain pressure
+    # volumetric flow rate(㎥/h) for certain pressure
     def volumetric_flow_rate(self, dp=50):
         # vfra = volumetric_flow_rate_air
-        vfra = self.val["C at STP"] * math.pow(dp, self.val["n"])
+        vfra = self.val["C0"] * math.pow(dp, self.val["n"])
         # 95% confidence
-        vfra_min = self.val["C range"][0] * math.pow(dp, self.val["n range"][0])
-        vfra_max = self.val["C range"][1] * math.pow(dp, self.val["n range"][1])
+        vfra_min = self.val["C0 range"][0] * math.pow(dp, self.val["n range"][0])
+        vfra_max = self.val["C0 range"][1] * math.pow(dp, self.val["n range"][1])
         # 95% prediction, moey = margin_of_error_of_y 
         moey = self.val["t"] * self.val["variance of n"] \
                             * math.sqrt(self.val["variance of x"] * (self.val["N"] - 1) / \
@@ -138,8 +144,8 @@ class BlowerDoorTestCalculator:
         # vfra = volumetric_flow_rate_air
         vfra_min = vfra / math.exp(-self.val["margin of error of y"])
         vfra_max = vfra / math.exp(+self.val["margin of error of y"])
-        dp_min = math.pow(vfra_min / self.val["C at STP"], 1 / self.val["n"])
-        dp_max = math.pow(vfra_max / self.val["C at STP"], 1 / self.val["n"])
+        dp_min = math.pow(vfra_min / self.val["C0"], 1 / self.val["n"])
+        dp_max = math.pow(vfra_max / self.val["C0"], 1 / self.val["n"])
         return [dp_min, dp_max]
 
     def calculate_results(self):
@@ -147,12 +153,20 @@ class BlowerDoorTestCalculator:
         self.calculate_calibration_values()
         self.calculate_variance_and_confidence_values()
         
-        self.val["volumetric flow rate of Air at 50Pa"] = self.volumetric_flow_rate()
-        self.val["ACH50"] = self.val["volumetric flow rate of Air at 50Pa"][0] / self.interior_volume
-        # save function to calculate air leakage/infiltration
-        self.val["volumetric flow rate"] = self.volumetric_flow_rate
-        # save function to calculate dp at certain vfra
-        self.val["reverse vfra"] = self.reverse_vfra
+        # volumetric flow rate of Air at 50Pa
+        self.val["Q50"] = self.volumetric_flow_rate()[0]
+        # Air change per hour at 50 pressure difference
+        self.val["ACH50"] = self.val["Q50"] / self.interior_volume
+        # leakage area at 50 Pa (㎡)
+        self.val["AL50"] = self.val["C0"] * math.pow(self.val["density at STP"]/2,0.5)*math.pow(50, self.val["n"]-0.5) / 3_600
+        
+        # confidence intervals
+        Q50s = self.volumetric_flow_rate()
+        self.val["Q50+-"] = f"{(Q50s[3]-Q50s[0])/Q50s[0]*100:+.1f}%/{(Q50s[4]-Q50s[0])/Q50s[0]*100:+.1f}%"
+        C0s = [self.val["C0"]] + self.val["C0 range"]
+        self.val["C0+-"] = f"{(C0s[1]-C0s[0])/C0s[0]*100:+.1f}%/{(C0s[2]-C0s[0])/C0s[0]*100:+.1f}%"
+        ns = [self.val["n"]] + self.val["n range"]
+        self.val["n+-"] = f"{(ns[1]-ns[0])/ns[0]*100:+.1f}%/{(ns[2]-ns[0])/ns[0]*100:+.1f}%"
 
         # SST(Total Sum of Squares)
         mean_of_vfra = statistics.mean([j for [_,j] in self.val["measured values"]])
@@ -160,30 +174,98 @@ class BlowerDoorTestCalculator:
         # SSE(Explained Sum of Square)
         self.val["SSR"] = sum([(j - self.volumetric_flow_rate(i)[0])**2 for [i, j] in self.val["measured values"]])
         # R-squared
-        self.val["R^2"] = 1 - (self.val["SSR"] / self.val["SST"])
+        self.val["r^2"] = 1 - (self.val["SSR"] / self.val["SST"])
 
         return self.val
+
+
+if __name__ == '__main__':
+
+    # 시험 조건 불러오기
+    conditions = 'conditions.json'
+    with open(conditions, 'r') as file:
+        data = json.load(file)
     
-# BlowerDoorTestCalculator 클래스의 인스턴스를 json 파일로부터 생성
-calculator = BlowerDoorTestCalculator.from_file('data_20230515_142310.json')
+    # 아무 시험 결과 없는 경우, Just in case.
+    if not data.get("depressurization") and not data.get("pressurization"):
+        pass
 
-# 기밀시험 결과 계산
-results = calculator.calculate_results()
+    # 결과 저장 변수 선언
+    calculation_raw = {}
+    # 보고서 용 값 저장
+    calculation_raw["report"] = {}
 
-# 결과 출력
-for i in results.keys():
-    if i in ["N", "ACH50", "R^2", "n","C at STP", "n range", "C range"]:
-        print(f"{i}: {results[i]}")
+    # 저장 할 값 지정
+    need_to_save = ["C0", 
+                    "n", 
+                    "C0 range", 
+                    "n range", 
+                    "t", 
+                    "variance of n", 
+                    "variance of x", 
+                    "mean x",
+                    "N", 
+                    "measured values", 
+                    "margin of error of y",
+                    "Q50",
+                    "ACH50",
+                    "AL50",
+                    "r^2",
+                    "Q50+-",
+                    "ACH50+-",
+                    "n+-",
+                    "C0+-"]
+    
+    need_to_report = ["Q50", "ACH50", "AL50", "C0", "n", "Q50+-", "C0+-", "n+-", "r^2"]
+        
+    # 감압 시험을 수행 한 경우
+    if data.get("depressurization"):
+        # 파일 불러오기
+        depressureization = BlowerDoorTestCalculator.from_file('depressurization_raw.json',
+                                                               'conditions.json')
+        # 결과 계산
+        results_depr = depressureization.calculate_results()
+        # Raw data 저장
+        now = datetime.now().strftime("%d%m%Y-%H%M%S")
+        with open(f"./calculations/depressurization_{now}.json", 'w') as file:
+            json.dump(results_depr, file, indent=4)
+        # 결과 값 변수 저장
+        calculation_raw['depressurization'] = {}
+        for i in results_depr.keys():
+            if i in need_to_save:
+                calculation_raw['depressurization'][i]=results_depr[i]
+        
+        for i in need_to_report:
+            report_key = i + "-"
+            calculation_raw["report"][report_key] = calculation_raw["depressurization"][i]
 
-pprint(results)
+    # 가압 시험을 수행 한 경우
+    if data.get("pressurization"):
+        # 파일 불러오기
+        pressureization = BlowerDoorTestCalculator.from_file('pressurization_raw.json',
+                                                             'conditions.json')
+        # 결과 계산
+        results_pres = pressureization.calculate_results()
+        # Raw data 저장
+        now = datetime.now().strftime("%d%m%Y-%H%M%S")
+        with open(f"./calculations/pressurization_{now}.json", 'w') as file:
+            json.dump(results_pres, file, indent=4)
+        # 결과 값 변수 저장
+        calculation_raw['pressurization'] = {}
+        for i in results_pres.keys():
+            if i in need_to_save:
+                calculation_raw['pressurization'][i]=results_pres[i]
+        
+        for i in need_to_report:
+            report_key = i + "+"
+            calculation_raw["report"][report_key] = calculation_raw["pressurization"][i]
 
-from graph_plotter import plot_graph, create_report
+    # 감/가압 시험 모두 수행 한 경우, 평균 값 계산
+    if data.get("depressurization") and data.get("pressurization"):
+        calculation_raw["average"] = {}
+        for i in ["Q50", "ACH50", "AL50"]:
+            calculation_raw["report"][i + "_avg"] = (calculation_raw["depressurization"][i] \
+                                                     + calculation_raw["pressurization"][i])/2
 
-# 그래프 그리기
-#plot_graph(results)
-# 보고서 텍스트
-text = """
-여기에 보고서 텍스트를 작성하십시오. 
-이 텍스트는 그림의 상단에 표시됩니다.
-"""
-create_report(results, text)
+    with open(f"./calculation_raw.json", 'w') as file:
+        json.dump(calculation_raw, file, indent=4)

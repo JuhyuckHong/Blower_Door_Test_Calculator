@@ -53,3 +53,17 @@ myenv/
 
 # git
 .git/
+
+# 테스트 및 백업 파일
+calculations/
+conditions/
+graphs/
+measurements/
+reports/
+calculation_raw.json
+conditions.json
+depressurization_raw.json
+pressurization_raw.json
+raspberrypi.txt
+report_template.xlsx
+graph.png
