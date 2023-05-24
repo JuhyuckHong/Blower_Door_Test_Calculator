@@ -43,7 +43,7 @@ def reverse_vfra(results, vfra):
     dp_max = math.pow(vfra_max / results["C0"], 1 / results["n"])
     return [dp_min, dp_max]
 
-def plot_graph(resultsd, resultsp):
+def plot_graph(resultsd, resultsp, report):
     # 폰트 설정
     font_path = './NanumSquare_acL.ttf'
     font_name = font_manager.FontProperties(fname=font_path).get_name()
@@ -54,6 +54,24 @@ def plot_graph(resultsd, resultsp):
     height_px = 1500  
     dpi = 300  # 인치당 픽셀 (dots per inch)
     plt.figure(figsize=(width_px/dpi, height_px/dpi))
+    
+    # ACH50 표시
+    position = {"x": 10.5,
+                "y": 110}
+    if resultsd and resultsp:
+        text = {"s": f'ACH50\n평균: {report["ACH50_avg"]:.2f}\n감압: {report["ACH50-"]:.2f}\n가압: {report["ACH50+"]:.2f}'}
+    elif resultsd:
+        text = {"s": f'ACH50\n감압: {report["ACH50-"]:.2f}'}
+    elif resultsp:
+        text = {"s": f'ACH50\n가압: {report["ACH50+"]:.2f}'}
+    plt.text(**position,
+             **text, 
+             fontsize=10, 
+             ha='left', 
+             bbox=dict(facecolor='white',
+                       edgecolor='grey',
+                       boxstyle='round',
+                       pad=0.25))
 
     # x 축 설정
     plt.xscale("log")
@@ -188,12 +206,14 @@ def plot_graph(resultsd, resultsp):
     # 데이터 플롯
     Pa_50 = 50
 
+    xd = range(1, 99)
+    xp = xd
     ## depress
     if resultsd:
         # 측정값
         xd_values, yd_values = zip(*resultsd["measured values"])
         # 계산값(ci=95%신뢰구간, pi=95%예측구간)
-        xd = range(int(min(xd_values) - 4), int(max(xd_values) + 15))
+        # xd = range(int(min(xd_values) - 4), int(max(xd_values) + 15))
         yd, yd_ci_l, yd_ci_u, yd_pi_l, yd_pi_u = zip(*[volumetric_flow_rate(resultsd, i) for i in xd])
         plt.scatter(xd_values, yd_values, **scatter_params_d)
         plt.plot(xd, yd, **derived_params_d)
@@ -209,7 +229,7 @@ def plot_graph(resultsd, resultsp):
         # 측정값
         xp_values, yp_values = zip(*resultsp["measured values"])
         # 계산값(ci=95%신뢰구간, pi=95%예측구간)
-        xp = range(int(min(xp_values) - 4), int(max(xp_values) + 15))
+        # xp = range(int(min(xp_values) - 4), int(max(xp_values) + 15))
         yp, yp_ci_l, yp_ci_u, yp_pi_l, yp_pi_u = zip(*[volumetric_flow_rate(resultsp, i) for i in xp])
         plt.scatter(xp_values, yp_values, **scatter_params_p)
         plt.plot(xp, yp, **derived_params_p)
@@ -499,7 +519,7 @@ def plot_graph(resultsd, resultsp):
     plt.setp(labels, backgroundcolor=(1,1,1,0.7))  # 배경색을 흰색으로 설정
 
     # 백업 저장
-    now = datetime.now().strftime("%d%m%Y-%H%M%S")    
+    now = datetime.now().strftime("%d%m%Y-%H%M%S")
     plt.savefig(f'./graphs/graph_{now}.png', dpi=300, bbox_inches='tight')
     # 사용할 그래프 저장
     plt.savefig(f'./graph.png', dpi=300, bbox_inches='tight')
@@ -516,8 +536,14 @@ if __name__ == '__main__':
         calculation_raw = json.load(file)
 
     if conditions.get("depressurization") and conditions.get("pressurization"):
-        plot_graph(calculation_raw['depressurization'], calculation_raw['pressurization'])
+        plot_graph(calculation_raw['depressurization'],
+                   calculation_raw['pressurization'],
+                   calculation_raw['report'])
     elif conditions.get("depressurization"):
-        plot_graph(calculation_raw['depressurization'], False)
+        plot_graph(calculation_raw['depressurization'], 
+                   False,
+                   calculation_raw['report'])
     elif conditions.get("pressurization"):
-        plot_graph(False, calculation_raw['pressurization'])
+        plot_graph(False,
+                   calculation_raw['pressurization'],
+                   calculation_raw['report'])
