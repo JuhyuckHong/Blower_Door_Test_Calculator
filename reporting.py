@@ -1,4 +1,5 @@
 import json
+import shutil
 import openpyxl
 from openpyxl.drawing.image import Image as XlsxImage
 from datetime import datetime
@@ -11,9 +12,7 @@ class ReportMaker:
     @staticmethod
     def copy_file(src_path, dst_path):
         try:
-            with open(src_path, 'rb') as src_file:
-                with open(dst_path, 'wb') as dst_file:
-                    dst_file.write(src_file.read())
+            shutil.copy2(src_path, dst_path)
         except IOError as e:
             print(f"파일 복사 오류: {e}")
 
@@ -26,21 +25,27 @@ class ReportMaker:
         with open('calculation_raw.json', 'r') as file:
             report.update(json.load(file)["report"])
 
+        # make float values into string
+        for i, j in report.items():
+            if isinstance(j, float):
+                report[i] = f"{j:.2f}"
+
         now = datetime.now().strftime("%d%m%Y-%H%M%S")
         with open(f'./reports/report_{now}.json', 'w') as file:
             json.dump(report, file, indent=4)
 
         for row in ws.iter_rows():
             for cell in row:
-                if cell.value is not None:
-                    try:
-                        report_item = cell.value.split("*")
-                        if item := report.get(report_item[1]):
-                            cell.value = item
-                        else:
-                            cell.value = "-"
-                    except IndexError:
-                        pass
+                try:
+                    report_item = cell.value.split("*")
+                    if item := report.get(report_item[1]):
+                        cell.value = item
+                    else:
+                        cell.value = "-"
+                except IndexError:
+                    pass
+                except AttributeError:
+                    pass
 
         wb.save(output_path)
         wb.close()
@@ -93,15 +98,21 @@ if __name__ == "__main__":
     # 템플릿 파일 이름
     template_path = "report_template.xlsx"
     # 결과 파일 명
-    now = datetime.now().strftime("%d%m%Y-%H%M%S")
+    now = datetime.now().strftime("%y%m%d-%H%M%S")
     output_path = f"report_{now}.xlsx"
     # 이미지 정보
     image_path = "graph.png"
-    cell = "A30"
-    width = 600
-    height = 375
+    cell = "B28"
+    width = 590
+    height = 355
     # 파일 보호 비밀번호
     key = "asdf"
     report_maker = ReportMaker(template_path)
     report_maker.process_report(output_path, image_path, cell, width, height, key)
-    
+
+    import platform
+    if platform.system() == "Linux":
+        import subprocess as sub
+        sub.call(f"libreoffice --headless --convert-to pdf {output_path}", shell=True)
+        shutil.move(output_path.split('.')[0] + '.pdf', "report.pdf")
+        sub.call(f"xpdf ./report.pdf")
