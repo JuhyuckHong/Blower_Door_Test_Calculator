@@ -115,4 +115,4 @@ if __name__ == "__main__":
         import subprocess as sub
         sub.call(f"libreoffice --headless --convert-to pdf {output_path}", shell=True)
         shutil.move(output_path.split('.')[0] + '.pdf', "report.pdf")
-        sub.call(f"xpdf ./report.pdf")
+        sub.call(f"xpdf ./report.pdf", shell=True)
