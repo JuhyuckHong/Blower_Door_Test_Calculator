@@ -17,7 +17,7 @@ def get_duty(target, delay, average_time, control_limit):
 
     # 실패 조건
     failure_time = 0
-    failure_threshold = 10
+    failure_threshold = 20
 
     # 종료 측정 조건
     final_measure_time = 5
