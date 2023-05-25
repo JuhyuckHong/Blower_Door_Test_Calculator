@@ -4,6 +4,13 @@ import crcmod
 import struct
 import time
 
+def temperature_and_humidity(port='dev/ttyUSB1', baudrate=9600):
+    # 시리얼 연결
+    ser = serial.Serial(port=port,
+                        baudrate=baudrate,
+                        timeout=1)
+    return ser
+
 
 def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600):
     # 시리얼 연결
