@@ -4,7 +4,7 @@ import struct
 import time
 
 
-def pressure_read(average_time, port='dev/ttyUSB0', baudrate=9600):
+def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600):
     # 시리얼 연결
     ser = serial.Serial(port=port,
                         baudrate=baudrate,
