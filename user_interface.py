@@ -3,13 +3,17 @@ import json
 import time
 import shutil
 import random
-import ACH_calculator, graph_plotter, reporting
 from datetime import datetime
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QGridLayout, QCheckBox, QMainWindow, QVBoxLayout, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout
+from PyQt5.QtWidgets import QPushButton, QGridLayout, QCheckBox, QMainWindow
 from PyQt5.QtCore import QTimer, QPointF, Qt, QThread, pyqtSignal
 from PyQt5.QtChart import QChart, QChartView, QLineSeries, QValueAxis
 from PyQt5.QtGui import QFont, QFontDatabase, QPixmap
-
+import ACH_calculator
+import graph_plotter
+import reporting
+import pwm_pid_control
+import sensor_and_controller
 
 class InputInitalValues(QWidget):
     def __init__(self):
@@ -260,8 +264,10 @@ class BackgroundTask(QThread):
         self.task_type = task_type
 
     def run(self):
-        if self.task_type == "blower_door_test":
-            self.blower_door_test()
+        if self.task_type == "depressurization":
+            self.blower_door_test(self.task_type)
+        elif self.task_type == "pressurization":
+            self.blower_door_test(self.task_type)
         elif self.task_type == "calculation":
             self.calculation()
         elif self.task_type == "graph_plotting":
@@ -271,13 +277,67 @@ class BackgroundTask(QThread):
 
         self.finished.emit()  # 작업 완료 시그널 발생
 
-    def blower_door_test(self):
-        initial_time = time.time()
-        while True:
-            print(f"{self.task_type} is running...")
-            time.sleep(1)
-            if time.time() - initial_time > 2:
-                break
+    @staticmethod
+    def measuring_pressure(total_duration, local_duration):
+        # 압력 측정
+        pressure = []
+        # 측정 시간
+        pressure_size = total_duration
+        while pressure_size:
+            measuring_duration = local_duration
+            pressure.append(sensor_and_controller.
+                            pressure_read(average_time=
+                                          measuring_duration))
+            pressure_size -= measuring_duration
+        # 측정 평균값 저장
+        return sum(pressure)/len(pressure)
+
+    def blower_door_test(self, test):
+        # 측정
+        measuring = {}
+        measuring["measured_value"] = []
+        # 온습도, 대기압
+        measuring["temperature"] = 20
+        measuring["relative_humidity"] = 50
+        measuring["atmospheric_pressure"] = 101325
+        # 테스트 기록
+        measuring["test"] = test
+        # 시험 시작 시간
+        time_start = datetime.now().strftime("%H:%M:%S")
+        # 시작 0 기류 압력 측정
+        # measuring["initial_zero_pressure"] = self.measuring_pressure(10, 1)
+        # 60Pa PWM duty 값 추출
+        (duty, success, pressure) = pwm_pid_control.get_duty(target=60,
+                                                             delay=5,
+                                                             average_time=0.5,
+                                                             control_time=5)
+        if success:
+            # 60Pa 측정 값 저장
+            measuring["measured_value"].append([pressure, duty])
+            # 측정 범위 설정
+            num_to_measure = 10
+            step = (duty - 0) / (num_to_measure - 1)  # 간격 계산
+            duty_range = [round(0 + i * step) for i in range(num_to_measure)]
+            # 데이터 측정
+            for d in duty_range:
+                sensor_and_controller.duty_set(d)
+                time.sleep(10)
+                p = self.measuring_pressure(10, 1)
+                measuring["measured_value"].append([p, d])
+        # 종료 0 기류 압력 측정
+        # measuring["final_zero_pressure"] = self.measuring_pressure(10, 1)
+        # 시험 종료 시간
+        time_end = datetime.now().strftime("%H:%M:%S")
+        measuring["test time"] = [time_start, time_end]
+
+        # Raw data 백업 저장
+        now = datetime.now().strftime("%y%m%d-%H%M%S")
+        with open(f"./measurements/{test}_{now}.json", 'w') as file:
+            json.dump(measuring, file, indent=4)
+        # 데이터 저장
+        with open(f"./{test}_raw.json", 'w') as file:
+            json.dump(measuring, file, indent=4)
+        
 
     def calculation(self):
         # 시험 조건 불러오기
@@ -480,7 +540,7 @@ if __name__ == '__main__':
         message.setWindowTitle("...")
         message.resize(size_w, size_h)
         message.show()
-        wait_for_end = BackgroundTask("blower_door_test")
+        wait_for_end = BackgroundTask("depressurization")
         wait_for_end.finished.connect(message.close)
         wait_for_end.start()    
         app.exec_()
@@ -506,7 +566,7 @@ if __name__ == '__main__':
         message.setWindowTitle("...")
         message.resize(size_w, size_h)
         message.show()
-        wait_for_end = BackgroundTask("blower_door_test")
+        wait_for_end = BackgroundTask("pressurization")
         wait_for_end.finished.connect(message.close)
         wait_for_end.start()    
         app.exec_()    
