@@ -1,4 +1,5 @@
 contourpy==1.0.7
+crcmod==1.7
 cycler==0.11.0
 et-xmlfile==1.1.0
 fonttools==4.39.4
@@ -14,6 +15,7 @@ PyQt5-Qt5==5.15.2
 PyQt5-sip==12.12.1
 PyQtChart==5.15.6
 PyQtChart-Qt5==5.15.2
+pyserial==3.5
 python-dateutil==2.8.2
 scipy==1.10.1
 simple-pid==2.0.0
