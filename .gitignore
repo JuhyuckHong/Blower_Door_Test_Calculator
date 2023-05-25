@@ -60,10 +60,12 @@ conditions/
 graphs/
 measurements/
 reports/
+BDT/
 calculation_raw.json
 conditions.json
 depressurization_raw.json
 pressurization_raw.json
 raspberrypi.txt
-report_template.xlsx
+report_*.xlsx
 graph.png
+test.py
