@@ -173,7 +173,7 @@ class LivePressureData(QMainWindow):
         self.setCentralWidget(main_widget)
 
         # 초기 데이터 (x는 시간, y는 랜덤값)
-        self.data = [QPointF(i, random.random()) for i in range(10)]
+        self.data = [QPointF(i, sensor_and_controller.pressure_read()) for i in range(10)]
         self.series.replace(self.data)
 
         # 타이머 설정 (1초마다 update_chart 호출)
@@ -188,8 +188,9 @@ class LivePressureData(QMainWindow):
         self.stop_button.clicked.connect(self.close)
 
     def update_chart(self):
-        # 새로운 랜덤값을 데이터에 추가
-        self.data.append(QPointF(self.data[-1].x() + 1, random.randrange(0,100)))
+        # 새로운 측정값을 데이터에 추가
+        new = sensor_and_controller.pressure_read()
+        self.data.append(QPointF(self.data[-1].x() + 1, new))
         # 데이터가 100개를 초과하면 가장 오래된 데이터를 제거
         if len(self.data) > 100:
             self.data.pop(0)
@@ -307,23 +308,32 @@ class BackgroundTask(QThread):
         # 시작 0 기류 압력 측정
         # measuring["initial_zero_pressure"] = self.measuring_pressure(10, 1)
         # 60Pa PWM duty 값 추출
-        (duty, success, pressure) = pwm_pid_control.get_duty(target=60,
+        (duty, success, pressure) = pwm_pid_control.get_duty(target=80,
                                                              delay=5,
                                                              average_time=0.5,
-                                                             control_time=5)
+                                                             control_limit=10)
+        print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
         if success:
             # 60Pa 측정 값 저장
             measuring["measured_value"].append([pressure, duty])
             # 측정 범위 설정
-            num_to_measure = 10
+            num_to_measure = 5
             step = (duty - 0) / (num_to_measure - 1)  # 간격 계산
-            duty_range = [round(0 + i * step) for i in range(num_to_measure)]
+            duty_range = [round(duty - i * step) for i in range(num_to_measure)]
             # 데이터 측정
+            before = duty
             for d in duty_range:
                 sensor_and_controller.duty_set(d)
-                time.sleep(10)
+                time.sleep(before - d)
+                print(f"wait for settle: {before - d} sec")
                 p = self.measuring_pressure(10, 1)
+                print(f"measuring now duty={d}, pressure={p}")
                 measuring["measured_value"].append([p, d])
+                before = d
+        else:
+            # 측정 실패
+            # do something
+            pass
         # 종료 0 기류 압력 측정
         # measuring["final_zero_pressure"] = self.measuring_pressure(10, 1)
         # 시험 종료 시간
@@ -337,7 +347,6 @@ class BackgroundTask(QThread):
         # 데이터 저장
         with open(f"./{test}_raw.json", 'w') as file:
             json.dump(measuring, file, indent=4)
-        
 
     def calculation(self):
         # 시험 조건 불러오기
