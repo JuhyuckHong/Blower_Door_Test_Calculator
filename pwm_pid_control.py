@@ -2,7 +2,10 @@ import time
 from simple_pid import PID
 import sensor_and_controller
 
-def get_duty(target, delay, average_time, control_limit):
+def get_duty(target, delay, average_time, control_limit, test=True):
+    # 테스트 모드
+    if test: 
+        return (target, True, target)
     # 현재 압력 값 측정 및 초기값 세팅
     current = sensor_and_controller.pressure_read(0.1)
     duty = 0
