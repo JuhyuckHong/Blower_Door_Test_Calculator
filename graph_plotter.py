@@ -59,19 +59,22 @@ def plot_graph(resultsd, resultsp, report):
     position = {"x": 10.5,
                 "y": 110}
     if resultsd and resultsp:
-        text = {"s": f'ACH50\n평균: {report["ACH50_avg"]:.2f}\n감압: {report["ACH50-"]:.2f}\n가압: {report["ACH50+"]:.2f}'}
+        text = {"s": f' [ACH50]\n평균: {report["ACH50_avg"]:.2f}\n감압: {report["ACH50-"]:.2f}\n가압: {report["ACH50+"]:.2f}'}
     elif resultsd:
-        text = {"s": f'ACH50\n감압: {report["ACH50-"]:.2f}'}
+        text = {"s": f' [ACH50]\n감압: {report["ACH50-"]:.2f}'}
     elif resultsp:
-        text = {"s": f'ACH50\n가압: {report["ACH50+"]:.2f}'}
+        text = {"s": f' [ACH50]\n가압: {report["ACH50+"]:.2f}'}
     plt.text(**position,
              **text, 
              fontsize=10, 
-             ha='left', 
+             ha='left',
              bbox=dict(facecolor='white',
                        edgecolor='grey',
                        boxstyle='round',
-                       pad=0.25))
+                       pad=0.25,
+                       alpha=0.5,
+                       linewidth=1,
+                       linestyle='--'))
 
     # x 축 설정
     plt.xscale("log")
@@ -91,8 +94,16 @@ def plot_graph(resultsd, resultsp, report):
     y_lim_max = 1000
     plt.ylim(y_lim_min, y_lim_max)
 
+    equation = r'$Q={C:.2f} \cdot \Delta P^{{{n:.2f}}}$'
     # 그래프 그리기 옵션들
     if resultsd:
+        Q50_marker_d = {
+            "marker": '*',
+            "s": 50,
+            "edgecolor": "black",
+            "color": 'red',
+            "zorder": 11
+        }
         scatter_params_d = {
             'label': "감압 측정 값",
             'color': (0.3, 0.1, 0.1, 0.5),
@@ -101,14 +112,13 @@ def plot_graph(resultsd, resultsp, report):
             'zorder': 10
         }
         derived_params_d = {
-            'label': f"감압: Q={resultsd['C0']:.2f}·ΔP^{resultsd['n']:.2f}",
+            'label': equation.format(C=resultsd['C0'], n=resultsd['n']),
             'color': (1,0,0,0.8),
             'linewidth': 1.5,
             'alpha': 1,
             'zorder': 9
         }
         derived_params_d_ax = {
-            'label': f"감압: Q={resultsd['C0']:.2f}·ΔP^{resultsd['n']:.2f}",
             'color': (1,0,0,0.8),
             'linewidth': 0.5,
             'alpha': 1,
@@ -116,7 +126,6 @@ def plot_graph(resultsd, resultsp, report):
         }
         marker_enlarge_95_d = {
             "color": "red",
-            #"edgecolor": "black",
             "marker": '_',
             "s": 50,
             "zorder": 11}
@@ -128,6 +137,13 @@ def plot_graph(resultsd, resultsp, report):
             "zorder": 11}
 
     if resultsp:
+        Q50_marker_p = {
+            "marker": '*',
+            "s": 50,
+            "edgecolor": "black",
+            "color": 'blue',
+            "zorder": 11
+        }
         scatter_params_p = {
             'label': "가압 측정 값",
             'color': (0.1, 0.1, 0.3, 0.5),
@@ -136,14 +152,13 @@ def plot_graph(resultsd, resultsp, report):
             'zorder': 10
         }
         derived_params_p = {
-            'label': f"가압: Q={resultsp['C0']:.2f}·ΔP^{resultsp['n']:.2f}",
+            'label': equation.format(C=resultsp['C0'], n=resultsp['n']),
             'color': (0,0,1,0.8),
             'linewidth': 1.5,
             'alpha': 1,
             'zorder': 9
         }
         derived_params_p_ax = {
-            'label': f"가압: Q={resultsp['C0']:.2f}·ΔP^{resultsp['n']:.2f}",
             'color': (0,0,1,0.8),
             'linewidth': 0.5,
             'alpha': 1,
@@ -151,7 +166,6 @@ def plot_graph(resultsd, resultsp, report):
         }
         marker_enlarge_95_p = {
             "color": "blue",
-            #"edgecolor": "black",
             "marker": '_',
             "s": 50,
             "zorder": 11}
@@ -178,7 +192,7 @@ def plot_graph(resultsd, resultsp, report):
     }
     fill_params_CI = {
         'color': 'green',
-        'alpha': 0.2,
+        'alpha': 0.1,
         'zorder': 8
     }
     fill_patch_CI = {
@@ -189,7 +203,7 @@ def plot_graph(resultsd, resultsp, report):
     }
     fill_params_PI = {
         'color': 'grey',
-        'alpha': 0.1,
+        'alpha': 0.05,
         'hatch': '\\',
         'zorder': 8
     }
@@ -206,7 +220,7 @@ def plot_graph(resultsd, resultsp, report):
     # 데이터 플롯
     Pa_50 = 50
 
-    xd = range(1, 99)
+    xd = range(10, 110)
     xp = xd
     ## depress
     if resultsd:
@@ -268,7 +282,10 @@ def plot_graph(resultsd, resultsp, report):
     labels.append(fill_pi.get_label())
 
     # 범례 표시
-    plt.legend(handles, labels, loc="upper left", fontsize=9)
+    legend = plt.legend(handles, labels, loc="upper left", fontsize=9)
+    legend.get_frame().set_facecolor((0.98,0.98,0.98))
+    legend.set_zorder(20)
+    
 
     # 50 Pa 라인 그리기
     plt.axvline(x=Pa_50, color='green', linewidth=0.3, linestyle='-')
@@ -276,21 +293,21 @@ def plot_graph(resultsd, resultsp, report):
     if resultsd:
         Q50d = volumetric_flow_rate(resultsd, Pa_50)[0]
         plt.axhline(y=Q50d, color='green', linewidth=0.3, linestyle='-')
-        plt.plot(Pa_50, Q50d, 'ro', markersize=3, zorder=11)
+        plt.scatter(Pa_50, Q50d, **Q50_marker_d)
     # 가압 Q50 라인, 마커 그리기
     if resultsp:
         Q50p = volumetric_flow_rate(resultsp, Pa_50)[0]
         plt.axhline(y=Q50p, color='green', linewidth=0.3, linestyle='-')
-        plt.plot(Pa_50, Q50p, 'bo', markersize=3, zorder=11)
+        plt.scatter(Pa_50, Q50p, **Q50_marker_p)
     
 
     # 확대 할 범위 계산 
     # 감압
     if resultsd:
-        xd_closeup_start = reverse_vfra(resultsd, Q50d)[1]
-        xd_closeup_end = reverse_vfra(resultsd, Q50d)[0]
-        yd_closeup_start = volumetric_flow_rate(resultsd, Pa_50)[1]
-        yd_closeup_end = volumetric_flow_rate(resultsd, Pa_50)[2]
+        xd_closeup_start = max(reverse_vfra(resultsd, Q50d)[1], 10)
+        xd_closeup_end = min(reverse_vfra(resultsd, Q50d)[0], 100)
+        yd_closeup_start = max(volumetric_flow_rate(resultsd, Pa_50)[1], 100)
+        yd_closeup_end = min(volumetric_flow_rate(resultsd, Pa_50)[2], 1000)
 
         # 감압 확대 플롯 위치 사각형 그리기
         rectd = patches.Rectangle((xd_closeup_start, yd_closeup_start), 
@@ -300,10 +317,10 @@ def plot_graph(resultsd, resultsp, report):
         plt.gca().add_patch(rectd)
     # 가압
     if resultsp:
-        xp_closeup_start = reverse_vfra(resultsp, Q50p)[1]
-        xp_closeup_end = reverse_vfra(resultsp, Q50p)[0]
-        yp_closeup_start = volumetric_flow_rate(resultsp, Pa_50)[1]
-        yp_closeup_end = volumetric_flow_rate(resultsp, Pa_50)[2]
+        xp_closeup_start = max(reverse_vfra(resultsp, Q50p)[1], 10)
+        xp_closeup_end = min(reverse_vfra(resultsp, Q50p)[0], 100)
+        yp_closeup_start = max(volumetric_flow_rate(resultsp, Pa_50)[1], 100)
+        yp_closeup_end = min(volumetric_flow_rate(resultsp, Pa_50)[2], 1000)
 
         # 가압 확대 플롯 위치 사각형 그리기
         rectp = patches.Rectangle((xp_closeup_start, yp_closeup_start), 
@@ -321,8 +338,8 @@ def plot_graph(resultsd, resultsp, report):
 
         # 확대 플롯 화살표 그리기
         ## 감압 depress 화살표 좌표값 계산
-        x1d = log_scale_value(x_lim_min, x_lim_max, leftd + widthd/2 + 0.03)
-        y1d = log_scale_value(y_lim_min, y_lim_max, (bottomd + heightd) - 0.05)
+        x1d = log_scale_value(x_lim_min, x_lim_max, leftd + widthd/2)
+        y1d = log_scale_value(y_lim_min, y_lim_max, (bottomd + heightd)-0.08)
         x2d = (xd_closeup_start + xd_closeup_end)/2
         y2d = yd_closeup_start
         ## 화살표 그리기
@@ -341,8 +358,8 @@ def plot_graph(resultsd, resultsp, report):
         heightp = 0.15
 
         ## 가압 press 화살표 좌표값 계산
-        x1p = log_scale_value(x_lim_min, x_lim_max, leftp + widthp/2 + 0.03)
-        y1p = log_scale_value(y_lim_min, y_lim_max, (bottomp + heightp) - 0.05)
+        x1p = log_scale_value(x_lim_min, x_lim_max, leftp + widthp/2+0.05)
+        y1p = log_scale_value(y_lim_min, y_lim_max, (bottomp + heightp)-0.08)
         x2p = (xp_closeup_start + xp_closeup_end)/2
         y2p = yp_closeup_start
         ## 화살표 그리기
@@ -433,7 +450,8 @@ def plot_graph(resultsd, resultsp, report):
         axd.axvline(x=Pa_50, color='red', linewidth=1, linestyle='--')
 
         # 레이블 배경 설정
-        labels = axd.get_xticklabels() + axd.get_yticklabels()  # X와 Y 레이블 모두 가져오기
+        labelsd = axd.get_xticklabels() + axd.get_yticklabels()  # X와 Y 레이블 모두 가져오기
+        plt.setp(labelsd, backgroundcolor=(1,1,1,0.5))  # 배경색을 흰색으로 설정
 
     if resultsp:
         # axp=press 확대 플롯 위치
@@ -514,9 +532,8 @@ def plot_graph(resultsd, resultsp, report):
         axp.axvline(x=Pa_50, color='red', linewidth=1, linestyle='--')
 
         # 레이블 배경 설정
-        labels = axp.get_xticklabels() + axp.get_yticklabels()  # X와 Y 레이블 모두 가져오기
-
-    plt.setp(labels, backgroundcolor=(1,1,1,0.7))  # 배경색을 흰색으로 설정
+        labelsp = axp.get_xticklabels() + axp.get_yticklabels()  # X와 Y 레이블 모두 가져오기
+        plt.setp(labelsp, backgroundcolor=(1,1,1,0.5))  # 배경색을 흰색으로 설정
 
     # 백업 저장
     now = datetime.now().strftime("%d%m%Y-%H%M%S")
