@@ -12,7 +12,11 @@ def temperature_and_humidity(port='dev/ttyUSB1', baudrate=9600):
     return ser
 
 
-def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600):
+def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600, test=1):
+    # 테스트 모드
+    if test:
+        import random
+        return random.randrange(0, 100)
     # 시리얼 연결
     ser = serial.Serial(port=port,
                         baudrate=baudrate,
@@ -50,7 +54,10 @@ def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600):
             # 결과값을 10으로 나눈 값으로 반환
             return average_pressure/10
 
-def duty_set(duty, port='dev/ttyS0', baudrate=9600):
+def duty_set(duty, port='dev/ttyS0', baudrate=9600, test=True):
+    # 테스트 모드
+    if test:
+        return 0
     # 시리얼 연결
     ser = serial.Serial(port=port,
                         baudrate=baudrate,
@@ -71,7 +78,7 @@ def duty_set(duty, port='dev/ttyS0', baudrate=9600):
     # 시리얼 통신 전송을 위한 바이트 문자열로 변환
     duty = f"D{duty.zfill(3)}".encode('utf-8')
     # duty값 전송
-    ser.wrtie(duty)
+    ser.write(duty)
     return 0
 
 
