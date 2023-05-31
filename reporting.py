@@ -28,7 +28,10 @@ class ReportMaker:
         # make float values into string
         for i, j in report.items():
             if isinstance(j, float):
-                report[i] = f"{j:.2f}"
+                if i == "r^2-" or i == "r^2+":
+                    report[i] = f"{j:.4f}"
+                else:
+                    report[i] = f"{j:.2f}"
 
         now = datetime.now().strftime("%d%m%Y-%H%M%S")
         with open(f'./reports/report_{now}.json', 'w') as file:
