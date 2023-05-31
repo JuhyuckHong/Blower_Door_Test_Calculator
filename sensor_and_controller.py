@@ -12,7 +12,7 @@ def temperature_and_humidity(port='dev/ttyUSB1', baudrate=9600):
     return ser
 
 
-def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600, test=1):
+def pressure_read(average_time=0.1, port='dev/ttyUSB0', baudrate=9600, test=True):
     # 테스트 모드
     if test:
         import random
