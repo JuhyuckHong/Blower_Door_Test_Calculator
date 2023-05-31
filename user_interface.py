@@ -188,10 +188,8 @@ class LivePressureData(QMainWindow):
         self.timer.timeout.connect(self.update_chart)
         self.timer.start(100)
 
-        # 사이즈 조정
-        # self.resize(800, 480)
-
         # 측정 종료 버튼 클릭 이벤트 연결
+        self.stop_button.clicked.connect(self.timer.stop)
         self.stop_button.clicked.connect(self.close)
 
     def update_chart(self):
@@ -358,10 +356,10 @@ class BackgroundTask(QThread):
             before = duty
             for d in duty_range:
                 sensor_and_controller.duty_set(d, test=test_mode)
-                time.sleep(before - d)
                 print(f"wait for settle: {before - d} sec")
-                p = self.measuring_pressure(10, 1)
+                time.sleep(before - d)
                 print(f"measuring now duty={d}, pressure={p}")
+                p = self.measuring_pressure(10, 1)
                 measuring["measured_value"].append([p, d])
                 before = d
         else:
@@ -551,7 +549,7 @@ if __name__ == '__main__':
     if font_id != -1:
         font_families = font_db.applicationFontFamilies(font_id)
         # 로드한 글꼴의 첫 번째 패밀리를 사용
-        app.setFont(QFont(font_families[0], 12))
+        app.setFont(QFont(font_families[0], 9))
     else:
         print("Failed to load font.")
 
