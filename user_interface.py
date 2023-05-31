@@ -358,8 +358,8 @@ class BackgroundTask(QThread):
                 sensor_and_controller.duty_set(d, test=test_mode)
                 print(f"wait for settle: {before - d} sec")
                 time.sleep(before - d)
-                print(f"measuring now duty={d}, pressure={p}")
                 p = self.measuring_pressure(10, 1)
+                print(f"measuring now duty={d}, pressure={p}")
                 measuring["measured_value"].append([p, d])
                 before = d
         else:
