@@ -48,6 +48,10 @@ def plot_graph(resultsd, resultsp, report):
     font_path = './NanumSquare_acL.ttf'
     font_name = font_manager.FontProperties(fname=font_path).get_name()
     plt.rc('font', family=font_name)
+    font8 = font_manager.FontProperties(fname=font_path, size=8)
+    font9 = font_manager.FontProperties(fname=font_path, size=9)
+    font10 = font_manager.FontProperties(fname=font_path, size=10)
+    
 
     # 창 크기 고정 - 픽셀 단위
     width_px = 2400  
@@ -73,7 +77,7 @@ def plot_graph(resultsd, resultsp, report):
     
     plt.text(**position,
              **text, 
-             fontsize=10, 
+             fontproperties=font10, 
              ha='left',
              bbox=dict(facecolor='white',
                        edgecolor='grey',
@@ -87,7 +91,7 @@ def plot_graph(resultsd, resultsp, report):
     plt.xscale("log")
     plt.xticks([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 
                [10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
-    plt.tick_params(axis='x', direction='in')
+    plt.tick_params(axis='x', direction='in', fontproperties=font10)
     x_lim_min = 10
     x_lim_max = 100
     plt.xlim(x_lim_min, x_lim_max)
@@ -96,7 +100,7 @@ def plot_graph(resultsd, resultsp, report):
     plt.yscale("log")
     plt.yticks([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
                [100, 200, 300, 400, 500, 600, 700, 800, 900, '1,000'])
-    plt.tick_params(axis='y', direction='in')
+    plt.tick_params(axis='y', direction='in', fontproperties=font10)
     y_lim_min = 100
     y_lim_max = 1000
     plt.ylim(y_lim_min, y_lim_max)
@@ -267,12 +271,12 @@ def plot_graph(resultsd, resultsp, report):
     # 축 레이블 설정
     plt.xlabel('압력차 [Pa]',
                labelpad=15,
-               fontsize=10)
+               fontproperties=font10)
     plt.ylabel('침기량\n(누기량)\n[㎥/h]',
                rotation='horizontal',
                labelpad=20,
                linespacing=2,
-               fontsize=10)
+               fontproperties=font10)
 
     # 그래프와 제목 사이 간격 조정
     plt.subplots_adjust(top=0.9, bottom=0.15, left=0.15)
@@ -289,7 +293,7 @@ def plot_graph(resultsd, resultsp, report):
     labels.append(fill_pi.get_label())
 
     # 범례 표시
-    legend = plt.legend(handles, labels, loc="upper left", fontsize=9)
+    legend = plt.legend(handles, labels, loc="upper left", fontproperties=font9)
     legend.get_frame().set_facecolor((0.98,0.98,0.98))
     legend.set_zorder(20)
     
@@ -444,7 +448,7 @@ def plot_graph(resultsd, resultsp, report):
         axd.text(Pa_50 + offset_xd, Q50d - offset_yd,
                 f'{Q50d:.2f}㎥/h',
                 weight='bold',
-                fontsize=8,
+                fontproperties=font8,
                 bbox=dict(facecolor=(0.9, 0.9, 0.7, 0.5),
                         edgecolor=(0.9, 0.9, 0.7, 0.5),
                         pad=0.05,
@@ -526,7 +530,7 @@ def plot_graph(resultsd, resultsp, report):
         axp.text(Pa_50 + offset_xp, Q50p - offset_yp,
                 f'{Q50p:.2f}㎥/h',
                 weight='bold',
-                fontsize=8,
+                fontproperties=font8,
                 bbox=dict(facecolor=(0.9, 0.9, 0.7, 0.5),
                         edgecolor=(0.9, 0.9, 0.7, 0.5),
                         pad=0.05,
