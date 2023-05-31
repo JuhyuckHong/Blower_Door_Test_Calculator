@@ -46,8 +46,6 @@ def reverse_vfra(results, vfra):
 def plot_graph(resultsd, resultsp, report):
     # 폰트 설정
     font_path = './NanumSquare_acL.ttf'
-    font_name = font_manager.FontProperties(fname=font_path).get_name()
-    plt.rc('font', family=font_name)
     font8 = font_manager.FontProperties(fname=font_path, size=8)
     font9 = font_manager.FontProperties(fname=font_path, size=9)
     font10 = font_manager.FontProperties(fname=font_path, size=10)
@@ -90,8 +88,8 @@ def plot_graph(resultsd, resultsp, report):
     # x 축 설정
     plt.xscale("log")
     plt.xticks([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 
-               [10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
-    plt.tick_params(axis='x', direction='in', fontproperties=font10)
+               [10, 20, 30, 40, 50, 60, 70, 80, 90, 100], fontproperties=font10)
+    plt.tick_params(axis='x', direction='in')
     x_lim_min = 10
     x_lim_max = 100
     plt.xlim(x_lim_min, x_lim_max)
@@ -99,8 +97,8 @@ def plot_graph(resultsd, resultsp, report):
     # y 축 설정
     plt.yscale("log")
     plt.yticks([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
-               [100, 200, 300, 400, 500, 600, 700, 800, 900, '1,000'])
-    plt.tick_params(axis='y', direction='in', fontproperties=font10)
+               [100, 200, 300, 400, 500, 600, 700, 800, 900, '1,000'], fontproperties=font10)
+    plt.tick_params(axis='y', direction='in')
     y_lim_min = 100
     y_lim_max = 1000
     plt.ylim(y_lim_min, y_lim_max)
@@ -293,7 +291,7 @@ def plot_graph(resultsd, resultsp, report):
     labels.append(fill_pi.get_label())
 
     # 범례 표시
-    legend = plt.legend(handles, labels, loc="upper left", fontproperties=font9)
+    legend = plt.legend(handles, labels, loc="upper left", prop=font9)
     legend.get_frame().set_facecolor((0.98,0.98,0.98))
     legend.set_zorder(20)
     
@@ -395,11 +393,12 @@ def plot_graph(resultsd, resultsp, report):
                     yd_closeup_end + (yd_closeup_end - Q50d)*0.1)
 
         # 확대 플롯 틱
-        axd.set_xticks([Pa_50], [""])
+        axd.set_xticks([Pa_50], [""], fontproperties=font10)
         axd.set_yticks([yd_closeup_start, 
                     yd_closeup_end], 
                     [f'{yd_closeup_start:.0f}',
-                    f'{yd_closeup_end:.0f}'])
+                    f'{yd_closeup_end:.0f}'], 
+                    fontproperties=font10)
 
         # 확대 플롯 그리기
         axd.plot(xd, yd, **derived_params_d_ax)
@@ -477,11 +476,12 @@ def plot_graph(resultsd, resultsp, report):
                     yp_closeup_end + (yp_closeup_end - Q50p)*0.1)
 
         # 확대 플롯 틱
-        axp.set_xticks([Pa_50], [""])
+        axp.set_xticks([Pa_50], [""], fontproperties=font10)
         axp.set_yticks([yp_closeup_start, 
                     yp_closeup_end], 
                     [f'{yp_closeup_start:.0f}',
-                    f'{yp_closeup_end:.0f}'])
+                    f'{yp_closeup_end:.0f}'], 
+                    fontproperties=font10)
 
         # 확대 플롯 그리기
         axp.plot(xp, yp, **derived_params_p_ax)
