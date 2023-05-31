@@ -36,10 +36,11 @@ def get_duty(target, delay, average_time, control_limit, test=True):
         # PID 계산
         control = pid(current)
         # duty 업데이트 및 상하한 설정
-        duty += control 
+        duty += control
+        duty = round(duty)
         duty = max(0, min(100, duty))
         # duty 값 적용
-        sensor_and_controller.duty_set(duty)
+        sensor_and_controller.duty_set(duty, test=False)
         # 압력 변화 대기
         time.sleep(delay)
         # 압력 값 측정
@@ -57,28 +58,35 @@ def get_duty(target, delay, average_time, control_limit, test=True):
         error_pressure = abs(target - current)
         # duty 오차
         error_duty = abs(duty_avg - duty)
+        print(f"current pressure: {current:.2f}, error: {error_pressure:2.f}, target: {target}")
 
         if error_pressure < pressure_threshold and error_duty < max(2, duty/10):
             convergence_time += time_diff
+            print(f"Converging... ({convergence_time}s)")
         else:
             convergence_time = 0
+            print(f"Converging failed")
         
         if convergence_time >= duration:
             current = sensor_and_controller.pressure_read(final_measure_time)
+            print(f"Control finished with pressure({current}) for target({target})")
             return (duty, True, current)
 
         # duty 100으로 설정해도 목표 압력에 도달하지 못하는 경우
         if duty == 100 and error_pressure > failure_threshold:
+            print(f"With duty=100, cannot reach the target pressure({target}), current pressure({current})")
             failure_time += time_diff
         else:
             failure_time = 0
 
         # duty 0으로 설정해도 목표 압력 값을 초과하는 경우
         if duty == 0 and error_pressure > failure_threshold:
+            print(f"At duty=0, current pressure({current}) exceed the target pressure ({target})")
             failure_time += time_diff
         else:
             failure_time = 0
 
         if failure_time >= duration:
             current = sensor_and_controller.pressure_read(final_measure_time)
+            print(f"Control failed.")
             return (duty, False, current)
