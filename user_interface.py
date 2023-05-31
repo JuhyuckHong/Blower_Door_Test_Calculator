@@ -14,6 +14,13 @@ import graph_plotter
 import reporting
 import pwm_pid_control
 import sensor_and_controller
+import platform
+current_os = platform.system()
+if current_os == "Windows":
+    test_mode = True
+else:
+    test_mode = False
+    
 
 class InputInitalValues(QWidget):
     def __init__(self):
@@ -173,7 +180,7 @@ class LivePressureData(QMainWindow):
         self.setCentralWidget(main_widget)
 
         # 초기 데이터 (x는 시간, y는 랜덤값)
-        self.data = [QPointF(i, sensor_and_controller.pressure_read()) for i in range(10)]
+        self.data = [QPointF(i, sensor_and_controller.pressure_read(test=test_mode)) for i in range(10)]
         self.series.replace(self.data)
 
         # 타이머 설정 (1초마다 update_chart 호출)
@@ -189,7 +196,7 @@ class LivePressureData(QMainWindow):
 
     def update_chart(self):
         # 새로운 측정값을 데이터에 추가
-        new = sensor_and_controller.pressure_read()
+        new = sensor_and_controller.pressure_read(test=test_mode)
         self.data.append(QPointF(self.data[-1].x() + 1, new))
         # 데이터가 100개를 초과하면 가장 오래된 데이터를 제거
         if len(self.data) > 100:
@@ -288,7 +295,8 @@ class BackgroundTask(QThread):
             measuring_duration = local_duration
             pressure.append(sensor_and_controller.
                             pressure_read(average_time=
-                                          measuring_duration))
+                                          measuring_duration,
+                                          test=test_mode))
             pressure_size -= measuring_duration
         # 측정 평균값 저장
         return sum(pressure)/len(pressure)
@@ -307,23 +315,49 @@ class BackgroundTask(QThread):
         time_start = datetime.now().strftime("%H:%M:%S")
         # 시작 0 기류 압력 측정
         # measuring["initial_zero_pressure"] = self.measuring_pressure(10, 1)
-        # 60Pa PWM duty 값 추출
-        (duty, success, pressure) = pwm_pid_control.get_duty(target=80,
-                                                             delay=5,
-                                                             average_time=0.5,
-                                                             control_limit=10)
-        print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
+        sensor_and_controller.duty_set(0, test=test_mode)
+        time.sleep(10)
+        duty_0_pressure = sensor_and_controller.pressure_read(1, test=test_mode)
+        success = False
+        if duty_0_pressure < 40:
+            # 60Pa PWM duty 값 추출
+            (duty, success, pressure) = pwm_pid_control.get_duty(target=60,
+                                                                delay=5,
+                                                                average_time=0.5,
+                                                                control_limit=10,
+                                                                test=test_mode)
+            print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
+        elif duty_0_pressure < 60:
+            # 80Pa PWM duty 값 추출
+            (duty, success, pressure) = pwm_pid_control.get_duty(target=80,
+                                                                delay=5,
+                                                                average_time=0.5,
+                                                                control_limit=10,
+                                                                test=test_mode)
+            print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
+        elif duty_0_pressure < 60:
+            # 100Pa PWM duty 값 추출
+            (duty, success, pressure) = pwm_pid_control.get_duty(target=100,
+                                                                delay=5,
+                                                                average_time=0.5,
+                                                                control_limit=10,
+                                                                test=test_mode)
+            print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
+        else:
+            #print("너무 기밀해서 시험을 진행할 수 없습니다.")
+            success = False
+
         if success:
             # 60Pa 측정 값 저장
             measuring["measured_value"].append([pressure, duty])
             # 측정 범위 설정
-            num_to_measure = 5
+            num_to_measure = 10
             step = (duty - 0) / (num_to_measure - 1)  # 간격 계산
             duty_range = [round(duty - i * step) for i in range(num_to_measure)]
             # 데이터 측정
             before = duty
             for d in duty_range:
-                sensor_and_controller.duty_set(d)
+                sensor_and_controller.duty_set(d, test=test_mode)
                 time.sleep(before - d)
                 print(f"wait for settle: {before - d} sec")
                 p = self.measuring_pressure(10, 1)
@@ -331,12 +365,15 @@ class BackgroundTask(QThread):
                 measuring["measured_value"].append([p, d])
                 before = d
         else:
+            print("제어 실패")
             # 측정 실패
             # do something
             pass
         # 종료 0 기류 압력 측정
         # measuring["final_zero_pressure"] = self.measuring_pressure(10, 1)
-        # 시험 종료 시간
+        # 시험 종료
+        sensor_and_controller.duty_set(0, test=test_mode)
+        # 시험 종료 시간 기록
         time_end = datetime.now().strftime("%H:%M:%S")
         measuring["test time"] = [time_start, time_end]
 
@@ -382,9 +419,19 @@ class BackgroundTask(QThread):
                         "Q50+-",
                         "ACH50+-",
                         "n+-",
-                        "C0+-"]
+                        "C0+-",
+                        "interior_volume"]
         
-        need_to_report = ["Q50", "ACH50", "AL50", "C0", "n", "Q50+-", "C0+-", "n+-", "r^2"]
+        need_to_report = ["Q50", 
+                          "ACH50", 
+                          "AL50", 
+                          "C0", 
+                          "n", 
+                          "Q50+-", 
+                          "C0+-", 
+                          "n+-", 
+                          "r^2",
+                          "interior_volume"]
             
         # 감압 시험을 수행 한 경우
         if data.get("depressurization"):
@@ -495,7 +542,7 @@ if __name__ == '__main__':
 
     # 창 사이즈 설정
     size_w = 800
-    size_h = 480
+    size_h = 400
     # 폰트 설정
     font_db = QFontDatabase()
     # 글꼴 파일 경로
