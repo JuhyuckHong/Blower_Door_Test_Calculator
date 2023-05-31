@@ -58,12 +58,19 @@ def plot_graph(resultsd, resultsp, report):
     # ACH50 표시
     position = {"x": 10.5,
                 "y": 110}
+    text = {"s": f'[ACH50]'}
     if resultsd and resultsp:
-        text = {"s": f' [ACH50]\n평균: {report["ACH50_avg"]:.2f}\n감압: {report["ACH50-"]:.2f}\n가압: {report["ACH50+"]:.2f}'}
+        text["s"] += f'\n평균: {report["ACH50_avg"]:.2f}'
+        text["s"] += f'\n감압: {report["ACH50-"]:.2f}'
+        text["s"] += f'\n가압: {report["ACH50+"]:.2f}'
+        text["s"] += f'\n체적: {report["interior_volume-"]:.1f}㎥'
     elif resultsd:
-        text = {"s": f' [ACH50]\n감압: {report["ACH50-"]:.2f}'}
+        text["s"] += f'\n감압: {report["ACH50-"]:.2f}'
+        text["s"] += f'\n내부체적: {report["interior_volume-"]:.1f}㎥'
     elif resultsp:
-        text = {"s": f' [ACH50]\n가압: {report["ACH50+"]:.2f}'}
+        text["s"] += f'\n가압: {report["ACH50+"]:.2f}'
+        text["s"] += f'\n체적: {report["interior_volume+"]:.1f}㎥'
+    
     plt.text(**position,
              **text, 
              fontsize=10, 

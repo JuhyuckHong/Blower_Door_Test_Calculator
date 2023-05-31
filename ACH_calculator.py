@@ -153,6 +153,8 @@ class BlowerDoorTestCalculator:
         self.calculate_calibration_values()
         self.calculate_variance_and_confidence_values()
         
+        # save interior volume to report
+        self.val["interior_volume"] = self.interior_volume
         # volumetric flow rate of Air at 50Pa
         self.val["Q50"] = self.volumetric_flow_rate()[0]
         # Air change per hour at 50 pressure difference
@@ -214,10 +216,20 @@ if __name__ == '__main__':
                     "Q50+-",
                     "ACH50+-",
                     "n+-",
-                    "C0+-"]
+                    "C0+-",
+                    "interior_volume"]
     
-    need_to_report = ["Q50", "ACH50", "AL50", "C0", "n", "Q50+-", "C0+-", "n+-", "r^2"]
-        
+    need_to_report = ["Q50",
+                      "ACH50", 
+                      "AL50", 
+                      "C0", 
+                      "n", 
+                      "Q50+-", 
+                      "C0+-", 
+                      "n+-", 
+                      "r^2",
+                      "interior_volume"]
+    
     # 감압 시험을 수행 한 경우
     if data.get("depressurization"):
         # 파일 불러오기
