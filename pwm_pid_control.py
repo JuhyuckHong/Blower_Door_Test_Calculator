@@ -7,7 +7,7 @@ def get_duty(target, delay, average_time, control_limit, test=True):
     if test: 
         return (target, True, target)
     # 현재 압력 값 측정 및 초기값 세팅
-    current = sensor_and_controller.pressure_read(0.1)
+    current = sensor_and_controller.pressure_read(0.1, test=test)
     duty = 0
 
     # 압력 수렴 조건
@@ -44,7 +44,7 @@ def get_duty(target, delay, average_time, control_limit, test=True):
         # 압력 변화 대기
         time.sleep(delay)
         # 압력 값 측정
-        current = sensor_and_controller.pressure_read(average_time)
+        current = sensor_and_controller.pressure_read(average_time, test=test)
         # duty의 이동 평균 계산
         window.append(duty)
         if len(window) > window_size:
@@ -58,9 +58,9 @@ def get_duty(target, delay, average_time, control_limit, test=True):
         error_pressure = abs(target - current)
         # duty 오차
         error_duty = abs(duty_avg - duty)
-        print(f"current pressure: {current:.2f}, error: {error_pressure:2.f}, target: {target}")
+        print(f"current pressure: {current:.2f}, error: {error_pressure:.2f}, target: {target}")
 
-        if error_pressure < pressure_threshold and error_duty < max(2, duty/10):
+        if error_pressure < pressure_threshold: # and error_duty < max(2, duty/10):
             convergence_time += time_diff
             print(f"Converging... ({convergence_time}s)")
         else:
@@ -68,7 +68,7 @@ def get_duty(target, delay, average_time, control_limit, test=True):
             print(f"Converging failed")
         
         if convergence_time >= duration:
-            current = sensor_and_controller.pressure_read(final_measure_time)
+            current = sensor_and_controller.pressure_read(final_measure_time, test=test)
             print(f"Control finished with pressure({current}) for target({target})")
             return (duty, True, current)
 
@@ -87,6 +87,6 @@ def get_duty(target, delay, average_time, control_limit, test=True):
             failure_time = 0
 
         if failure_time >= duration:
-            current = sensor_and_controller.pressure_read(final_measure_time)
+            current = sensor_and_controller.pressure_read(final_measure_time, test=test)
             print(f"Control failed.")
             return (duty, False, current)
