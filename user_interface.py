@@ -2,11 +2,10 @@ import sys
 import json
 import time
 import shutil
-import random
 from datetime import datetime
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout
-from PyQt5.QtWidgets import QPushButton, QGridLayout, QCheckBox, QMainWindow
-from PyQt5.QtCore import QTimer, QPointF, Qt, QThread, pyqtSignal
+from PyQt5.QtWidgets import QPushButton, QGridLayout, QCheckBox, QMainWindow, QMessageBox
+from PyQt5.QtCore import QTimer, QPointF, Qt, QThread, pyqtSignal, QCoreApplication
 from PyQt5.QtChart import QChart, QChartView, QLineSeries, QValueAxis
 from PyQt5.QtGui import QFont, QFontDatabase, QPixmap
 import ACH_calculator
@@ -268,6 +267,7 @@ class BackgroundTask(QThread):
     def __init__(self, task_type):
         super().__init__()
         self.task_type = task_type
+        self.result = 0 # Initialize the result attribute
 
     def run(self):
         if self.task_type == "depressurization":
@@ -333,17 +333,14 @@ class BackgroundTask(QThread):
                                                                 control_limit=10,
                                                                 test=test_mode)
             print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
-        elif duty_0_pressure < 60:
-            # 100Pa PWM duty 값 추출
-            (duty, success, pressure) = pwm_pid_control.get_duty(target=100,
-                                                                delay=5,
-                                                                average_time=0.5,
-                                                                control_limit=10,
-                                                                test=test_mode)
+        elif duty_0_pressure < 80:
+            # 100Pa PWM duty 값 추출(센서 최대값이 100으로, 제어 불가능할 것으로 판단)
+            (duty, success, pressure) = (100, True, 100)
             print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
         else:
             #print("너무 기밀해서 시험을 진행할 수 없습니다.")
             success = False
+            fan_change = True
 
         if success:
             # 60Pa 측정 값 저장
@@ -362,11 +359,16 @@ class BackgroundTask(QThread):
                 print(f"measuring now duty={d}, pressure={p}")
                 measuring["measured_value"].append([p, d])
                 before = d
-        else:
+        elif fan_change:
             print("제어 실패")
-            # 측정 실패
-            # do something
-            pass
+            # 제어 실패
+            message_box = QMessageBox()
+            message_box.setWindowTitle("팬 교체 필요")
+            message_box.setText("건물이 너무 기밀하여 적은 용량의 팬으로 교체가 필요합니다.")
+            message_box.exec_()
+            # 앱 종료
+            QCoreApplication.quit()
+            return
         # 종료 0 기류 압력 측정
         # measuring["final_zero_pressure"] = self.measuring_pressure(10, 1)
         # 시험 종료
