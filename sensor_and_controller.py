@@ -3,6 +3,9 @@ import serial
 import crcmod
 import struct
 import time
+import pigpio
+
+
 
 def temperature_and_humidity(port='/dev/ttyUSB1', baudrate=9600):
     # 시리얼 연결
@@ -56,19 +59,18 @@ def pressure_read(average_time=0.1, port='/dev/ttyUSB0', baudrate=9600, test=Tru
             # 결과값을 10으로 나눈 값으로 반환
             return average_pressure/10
 
-def duty_set(duty, port='/dev/ttyS0', baudrate=9600, test=True):
+def duty_set(duty, test=True):
     # 테스트 모드
     if test:
         return 0
-    # 시리얼 연결
-    ser = serial.Serial(port=port,
-                        baudrate=baudrate,
-                        timeout=1)
+    
     # 입력 문자열 확인
     if not isinstance(duty, str):
         duty = str(duty)
+    
     # 문자열인 경우 스페이스 제거
     duty = duty.strip()
+    
     # 입력 패턴 확인(0~100)
     duty_pattern = r'^(?:100|[1-9]\d|\d)$'
     try:
@@ -76,11 +78,38 @@ def duty_set(duty, port='/dev/ttyS0', baudrate=9600, test=True):
         if not re.match(duty_pattern, duty):
             raise ValueError("입력 값 오류로 duty를 0으로 설정합니다.")
     except ValueError:
-        duty = '0'
-    # 시리얼 통신 전송을 위한 바이트 문자열로 변환
-    duty = f"D{duty.zfill(3)}".encode('utf-8')
-    # duty값 전송
-    ser.write(duty)
+        duty = '50'
+        
+    # Connect to pigpio
+    pi = pigpio.pi()
+
+    # Define the GPIO pin for PWM and the frequency in Hertz (25kHz)
+    gpio_pin = 18  # Example GPIO pin
+    frequency = 25000  # 25kHz
+
+    # Set the hardware PWM
+    # The range of duty cycle is from 0 to 1,000,000 (representing 0% to 100%)
+    duty_cycle = int(duty) * 10_000  # 50% duty cycle as an example
+
+    # Initialize the PWM on the specified pin
+    pi.hardware_PWM(gpio_pin, frequency, duty_cycle)
+
+    # Disconnect from pigpio
+    pi.stop()
+    return 0
+
+
+def fan_power(set=1):
+    # Connect to pigpio
+    pi = pigpio.pi()
+    
+    # Define the GPIO pin for power relay for the Fan
+    gpio_pin = 23
+    # To set the relay
+    pi.write(gpio_pin, set)
+
+    # Disconnect from pigpio
+    pi.stop()
     return 0
 
 
