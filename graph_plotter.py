@@ -88,7 +88,7 @@ def plot_graph(resultsd, resultsp, report):
     # x 축 설정
     plt.xscale("log")
     plt.xticks([10, 20, 30, 40, 50, 60, 70, 80, 90, 100], 
-               [10, 20, 30, 40, 50, 60, 70, 80, 90, 100], fontproperties=font10)
+               [10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
     plt.tick_params(axis='x', direction='in')
     x_lim_min = 10
     x_lim_max = 100
@@ -97,7 +97,7 @@ def plot_graph(resultsd, resultsp, report):
     # y 축 설정
     plt.yscale("log")
     plt.yticks([100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
-               [100, 200, 300, 400, 500, 600, 700, 800, 900, '1,000'], fontproperties=font10)
+               [100, 200, 300, 400, 500, 600, 700, 800, 900, '1,000'])
     plt.tick_params(axis='y', direction='in')
     y_lim_min = 100
     y_lim_max = 1000
@@ -393,12 +393,11 @@ def plot_graph(resultsd, resultsp, report):
                     yd_closeup_end + (yd_closeup_end - Q50d)*0.1)
 
         # 확대 플롯 틱
-        axd.set_xticks([Pa_50], [""], fontproperties=font10)
+        axd.set_xticks([Pa_50], [""])
         axd.set_yticks([yd_closeup_start, 
                     yd_closeup_end], 
                     [f'{yd_closeup_start:.0f}',
-                    f'{yd_closeup_end:.0f}'], 
-                    fontproperties=font10)
+                    f'{yd_closeup_end:.0f}'])
 
         # 확대 플롯 그리기
         axd.plot(xd, yd, **derived_params_d_ax)
@@ -476,12 +475,11 @@ def plot_graph(resultsd, resultsp, report):
                     yp_closeup_end + (yp_closeup_end - Q50p)*0.1)
 
         # 확대 플롯 틱
-        axp.set_xticks([Pa_50], [""], fontproperties=font10)
+        axp.set_xticks([Pa_50], [""])
         axp.set_yticks([yp_closeup_start, 
                     yp_closeup_end], 
                     [f'{yp_closeup_start:.0f}',
-                    f'{yp_closeup_end:.0f}'], 
-                    fontproperties=font10)
+                    f'{yp_closeup_end:.0f}'])
 
         # 확대 플롯 그리기
         axp.plot(xp, yp, **derived_params_p_ax)

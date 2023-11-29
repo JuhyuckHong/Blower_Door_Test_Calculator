@@ -300,6 +300,19 @@ class BackgroundTask(QThread):
         return sum(pressure)/len(pressure)
 
     def blower_door_test(self, test):
+
+        # 측정 모드에 따른 변수 설정
+        # OF-OD172SAP-Reversible 팬에만 해당하는 값임
+        zero_duty = 50
+        if test == "depressurization":
+            # PWM 55~90
+            min_duty, max_duty = 55, 90
+            initial_duty = 56
+        elif test == "pressurization":
+            # PWM 10~45
+            min_duty, max_duty = 45, 10
+            initial_duty = 44
+
         # 측정
         measuring = {}
         measuring["measured_value"] = []
@@ -311,68 +324,51 @@ class BackgroundTask(QThread):
         measuring["test"] = test
         # 시험 시작 시간
         time_start = datetime.now().strftime("%H:%M:%S")
-        # 시작 0 기류 압력 측정
-        # measuring["initial_zero_pressure"] = self.measuring_pressure(10, 1)
-        sensor_and_controller.duty_set(0, test=test_mode)
-        time.sleep(10)
-        duty_0_pressure = sensor_and_controller.pressure_read(1, test=test_mode)
-        success = False
-        if duty_0_pressure < 40:
-            # 60Pa PWM duty 값 추출
-            (duty, success, pressure) = pwm_pid_control.get_duty(target=60,
-                                                                delay=5,
-                                                                average_time=0.5,
-                                                                control_limit=10,
-                                                                test=test_mode)
-            print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
-        elif duty_0_pressure < 60:
-            # 80Pa PWM duty 값 추출
-            (duty, success, pressure) = pwm_pid_control.get_duty(target=80,
-                                                                delay=5,
-                                                                average_time=0.5,
-                                                                control_limit=10,
-                                                                test=test_mode)
-            print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
-        elif duty_0_pressure < 80:
-            # 100Pa PWM duty 값 추출(센서 최대값이 100으로, 제어 불가능할 것으로 판단)
-            (duty, success, pressure) = (100, True, 100)
-            print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
-        else:
-            #print("너무 기밀해서 시험을 진행할 수 없습니다.")
-            success = False
-            fan_change = True
 
+        # 시작 0 기류 압력 측정 # 현재 버전에서는 생략
+        # measuring["initial_zero_pressure"] = self.measuring_pressure(10, 1)
+
+        # 시험 시작
+        success = False
+        # 70Pa PWM duty 값 추출
+        (duty, success, pressure) = pwm_pid_control.get_duty(target=70,
+                                                             delay=5,
+                                                             average_time=0.5,
+                                                             control_limit=10,
+                                                             min_duty=min_duty,
+                                                             max_duty=max_duty,
+                                                             test=test_mode)
+        print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
+
+        # 70Pa PWM duty 값 추출 실패 시 = 누기량/침기량 대비 압력형성을 위한 풍량 부족
+        # max duty부터 min duty 전 까지 10번 수행
+        if not success:
+            duty = max_duty
+            success = True
+
+        # duty 최대값 설정 완료 후 측정 수행
         if success:
             # 60Pa 측정 값 저장
             measuring["measured_value"].append([pressure, duty])
             # 측정 범위 설정
             num_to_measure = 10
-            step = (duty - 0) / (num_to_measure - 1)  # 간격 계산
+            step = (duty - initial_duty) / (num_to_measure - 1)  # 간격 계산
             duty_range = [round(duty - i * step) for i in range(num_to_measure)]
             # 데이터 측정
             before = duty
             for d in duty_range:
                 sensor_and_controller.duty_set(d, test=test_mode)
-                print(f"wait for settle: {before - d} sec")
-                time.sleep(before - d)
+                print(f"wait for settle: {abs(before - d)} sec")
+                time.sleep(abs(before - d))
                 p = self.measuring_pressure(10, 1)
                 print(f"measuring now duty={d}, pressure={p}")
                 measuring["measured_value"].append([p, d])
                 before = d
-        elif fan_change:
-            print("제어 실패")
-            # 제어 실패
-            message_box = QMessageBox()
-            message_box.setWindowTitle("팬 교체 필요")
-            message_box.setText("건물이 너무 기밀하여 적은 용량의 팬으로 교체가 필요합니다.")
-            message_box.exec_()
-            # 앱 종료
-            QCoreApplication.quit()
-            return
-        # 종료 0 기류 압력 측정
+
+        # 종료 0 기류 압력 측정 # 현재 버전에서는 생략
         # measuring["final_zero_pressure"] = self.measuring_pressure(10, 1)
         # 시험 종료
-        sensor_and_controller.duty_set(0, test=test_mode)
+        sensor_and_controller.duty_set(zero_duty, test=test_mode)
         # 시험 종료 시간 기록
         time_end = datetime.now().strftime("%H:%M:%S")
         measuring["test time"] = [time_start, time_end]
@@ -513,7 +509,7 @@ class BackgroundTask(QThread):
     def reporting(self):
         # 템플릿 파일 이름
         template_path = "report_template.xlsx"
-        # 결과 파일 명
+        # 결과 파일 명  
         now = datetime.now().strftime("%y%m%d-%H%M%S")
         output_path = f"report_{now}.xlsx"
         # 이미지 정보
@@ -583,7 +579,7 @@ if __name__ == '__main__':
     # 감압 시험
     if data.get("depressurization"):
         # 감압 시험 준비
-        long_message = "기기의 바람 방향을 건물 바깥쪽으로 향하도록 설치 하고, 측정 시작 버튼을 눌리세요."
+        long_message = "측정 시작 버튼을 눌리세요."
         pressure = LivePressureData(long_message)
         pressure.setWindowTitle("감압 시험 준비")
         pressure.resize(size_w, size_h)
@@ -609,7 +605,7 @@ if __name__ == '__main__':
     # 가압 시험
     if data.get("pressurization"):
         # 가압 시험 준비
-        long_message = "기기의 바람 방향을 건물 안쪽으로 향하도록 설치 하고, 측정 시작 버튼을 눌리세요."
+        long_message = "측정 시작 버튼을 눌리세요."
         pressure = LivePressureData(long_message)
         pressure.setWindowTitle("가압시험 준비")
         pressure.resize(size_w, size_h)
