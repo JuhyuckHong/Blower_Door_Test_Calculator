@@ -1,3 +1,4 @@
+# -*- conding: utf-8 -*-
 import sys
 import json
 import time
@@ -19,7 +20,6 @@ if current_os == "Windows":
     test_mode = True
 else:
     test_mode = False
-    
 
 class InputInitalValues(QWidget):
     def __init__(self):
@@ -335,8 +335,8 @@ class BackgroundTask(QThread):
                                                              delay=5,
                                                              average_time=0.5,
                                                              control_limit=10,
-                                                             min_duty=min_duty,
-                                                             max_duty=max_duty,
+                                                             duty_min=min_duty,
+                                                             duty_max=max_duty,
                                                              test=test_mode)
         print(f"max duty: {duty}, control: {success}, pressure at duty: {pressure}")
 
