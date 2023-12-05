@@ -6,6 +6,7 @@ import shutil
 from datetime import datetime
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout
 from PyQt5.QtWidgets import QPushButton, QGridLayout, QCheckBox, QMainWindow, QMessageBox
+from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
 from PyQt5.QtCore import QTimer, QPointF, Qt, QThread, pyqtSignal, QCoreApplication
 from PyQt5.QtChart import QChart, QChartView, QLineSeries, QValueAxis
 from PyQt5.QtGui import QFont, QFontDatabase, QPixmap
@@ -63,7 +64,7 @@ class InputInitalValues(QWidget):
         # 입력 필드와 레이블 생성
         # (표시되는 레이블, 저장되는 key, placeholder)
         labels = [
-            ("시험 목적", "purpose", "협회 인증"),
+            ("시험 목적", "purpose", "기밀 시험"),
             ("위치", "location", "서울시 송파구 풍납동 497"),
             ("테스트 방식", "method", "method A / method B"),
             ("의뢰자", "requester", "홍길동, 010-0000-0000"),
@@ -114,6 +115,19 @@ class InputInitalValues(QWidget):
         self.checkbox_states[checkbox_text] = checkbox_state
 
     def save_data(self):
+        # 필수 값인 'interior volume' 값이 비어있는지 확인
+        interior_volume = self.input_fields["interior volume"].text()
+        if not interior_volume.strip():
+            # 경고 메시지 표시
+            QMessageBox.warning(self, "입력 오류", "'실내 체적 (㎥)'는 필수 입력 사항입니다.")
+            return
+        
+        # 감압 또는 가압 중 적어도 하나가 선택되었는지 확인
+        is_checked = self.checkbox_states.get("depressurization", False) or self.checkbox_states.get("pressurization", False)
+        if not is_checked:
+            QMessageBox.warning(self, "선택 오류", "'감압 실험' 또는 '가압 실험' 중 하나는 선택해야 합니다.")
+            return
+
         data = {}
         # 입력값을 JSON 파일로 저장
         for key, input_field in self.input_fields.items():
@@ -256,10 +270,55 @@ class ResultImageWindow(QWidget):
         
         # 이미지 파일을 QPixmap으로 로드
         pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaled(size_w, size_h)
+        pixmap = pixmap.scaled(size_w, size_h, Qt.KeepAspectRatio)
         
         # QLabel에 QPixmap 설정
         self.label.setPixmap(pixmap)
+
+
+class ResultTableWindow(QWidget):
+    def __init__(self, test_data):
+        super().__init__()
+        self.setWindowTitle('Blower Door Test Report')
+
+        # 테이블 위젯 설정
+        self.tableWidget = QTableWidget()
+        self.tableWidget.setRowCount(14)  # 필요한 행의 수
+        self.tableWidget.setColumnCount(6)  # 필요한 열의 수
+        self.tableWidget.setHorizontalHeaderLabels(['', '감압', '오차', '가압', '오차', '단위'])
+        
+        # 테이블 데이터 채우기
+        self.populate_table(test_data)
+
+        # 레이아웃 설정
+        layout = QVBoxLayout()
+        layout.addWidget(self.tableWidget)
+        self.setLayout(layout)
+
+    def populate_table(self, data):
+        # 시험 정보 섹션
+        test_info_labels = ['시험 기간', '위치', '의뢰자', '시험자', '실내 체적', '연면적', '시험 목적', '테스트 방법', '설계사', '시공사', '구조']
+        for i, label in enumerate(test_info_labels):
+            self.tableWidget.setItem(i, 0, QTableWidgetItem(label))
+            self.tableWidget.setItem(i, 1, QTableWidgetItem(data.get(label, '-')))
+
+        # 시험 결과 섹션
+        test_result_labels = ['시험 기준', 'Q50', 'ACH50', 'AL50', '누기 계수, C', '기류 지수, n', '결정 계수, r^2']
+        for i, label in enumerate(test_result_labels, start=7):
+            self.tableWidget.setItem(i, 0, QTableWidgetItem(label))
+            if label == '시험 기준':
+                self.tableWidget.setItem(i, 1, QTableWidgetItem('KS-L-ISO-9972'))
+            else:
+                self.tableWidget.setItem(i, 1, QTableWidgetItem(str(data.get(label, '-'))))
+                self.tableWidget.setItem(i, 2, QTableWidgetItem(str(data.get(label + ' 오차', '-'))))
+
+        # 단위 설정
+        self.tableWidget.setItem(9, 5, QTableWidgetItem('㎥/s'))
+        self.tableWidget.setItem(10, 5, QTableWidgetItem('1/h'))
+        self.tableWidget.setItem(11, 5, QTableWidgetItem('㎡'))
+        self.tableWidget.setItem(12, 5, QTableWidgetItem('㎥/(h·Pa^n)'))
+        self.tableWidget.setItem(13, 5, QTableWidgetItem('-'))
+
 
 class BackgroundTask(QThread):
     finished = pyqtSignal()  # 작업 완료 시그널
@@ -564,14 +623,6 @@ if __name__ == '__main__':
     # 시험 조건 불러오기
     with open('conditions.json', 'r') as file:
         data = json.load(file)
-    
-    # 감압, 가압 중 어느 하나라도 선택해야 진행 가능
-    if not data.get("depressurization") and not data.get("pressurization"):
-        long_message = "감압, 가압 시험 어느 것도 선택하지 않아 시험을 종료합니다."
-        end_of_test = SimpleMessageAutoDisappear(long_message, time_to_close)
-        end_of_test.resize(size_w, size_h)
-        end_of_test.show()
-        sys.exit(app.exec_())
 
     # 측정 시작 시간 저장
     time_start = datetime.now().strftime("%y/%m/%d %H:%M:%S")
@@ -696,10 +747,4 @@ if __name__ == '__main__':
     end_of_test = SimpleMessageAutoDisappear("시험이 모두 종료되었습니다.", time_to_close)
     end_of_test.resize(size_w, size_h)
     end_of_test.show()
-    app.exec_()
-
-    # 결과 그래프 표시
-    result_image = ResultImageWindow("graph.png", size_w, size_h)
-    result_image.resize(size_w, size_h)
-    result_image.show()
     app.exec_()

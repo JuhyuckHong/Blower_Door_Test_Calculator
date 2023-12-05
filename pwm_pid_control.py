@@ -31,7 +31,7 @@ def get_duty(target, delay, average_time, control_limit, duty_min=0, duty_max=10
 
     # 테스트 모드
     if test: 
-        return (target, True, target)
+        return (duty_max, True, target)
     # 현재 압력 값 측정 및 초기값 세팅
     current = abs(sensor_and_controller.pressure_read(0.1, test=test))
     duty = 0
