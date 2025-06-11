@@ -8,8 +8,8 @@ import os
 
 DEFAULT_COEFFICIENTS = {
     "none": {
-        "forward": {"slope": -14.76092, "intercept": 677.2736},
-        "reverse": {"slope": 10.48651, "intercept": -578.7256},
+        "forward": {"slope": 9.21069, "intercept": 935.46713},
+        "reverse": {"slope": 9.21069, "intercept": 935.46713},
     },
     "low": {
         "forward": {"slope": -12.0, "intercept": 560.0},
