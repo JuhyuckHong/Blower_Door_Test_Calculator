@@ -104,14 +104,14 @@ def get_duty(target, delay, average_time, control_limit, duty_min=0, duty_max=10
 
         # duty 100으로 설정해도 목표 압력에 도달하지 못하는 경우
         if duty == 100 and error_pressure > failure_threshold:
-            print(f"With duty=100, cannot reach the target pressure({target}), current pressure({current})")
+            print(
+                f"With duty=100, cannot reach the target pressure({target}), current pressure({current})"
+            )
             failure_time += time_diff
-        else:
-            failure_time = 0
-
-        # duty 0으로 설정해도 목표 압력 값을 초과하는 경우
-        if duty == 0 and error_pressure > failure_threshold:
-            print(f"At duty=0, current pressure({current}) exceed the target pressure ({target})")
+        elif duty == 0 and error_pressure > failure_threshold:
+            print(
+                f"At duty=0, current pressure({current}) exceed the target pressure ({target})"
+            )
             failure_time += time_diff
         else:
             failure_time = 0
