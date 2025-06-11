@@ -4,6 +4,33 @@ import statistics
 from pprint import pprint
 from scipy.stats import t
 from datetime import datetime
+import os
+
+DEFAULT_COEFFICIENTS = {
+    "none": {
+        "forward": {"slope": 9.21069, "intercept": 935.46713},
+        "reverse": {"slope": 9.21069, "intercept": 935.46713},
+    },
+    "low": {
+        "forward": {"slope": 7.36855, "intercept": 748.3737},
+        "reverse": {"slope": 7.36855, "intercept": 748.3737},
+    },
+    "high": {
+        "forward": {"slope": 5.52641, "intercept": 561.2803},
+        "reverse": {"slope": 5.52641, "intercept": 561.2803},
+    },
+}
+
+
+def load_fan_coefficients(file_path="fan_coefficients.json"):
+    """Load fan calibration coefficients from a JSON file."""
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return DEFAULT_COEFFICIENTS
 
 
 '''
@@ -33,17 +60,20 @@ class BlowerDoorTestCalculator:
         self.val = dict()
         # PWM duty to Volumetric Flow rate calculation
         # OF-OD172SAP-Reversible Fan에만 해당하는 값임
-        # Fan의 개수
-        self.num_fans = 2
+        self.cover = measured_data.get("fan_cover", "none").lower()
+        self.num_fans = int(measured_data.get("fan_count", 2))
+
+        fan_coeffs = load_fan_coefficients()
+        coeff = fan_coeffs.get(self.cover, fan_coeffs.get("none", DEFAULT_COEFFICIENTS["none"]))
         # for Forward flow
-        self.slope_fwd = -14.76092
-        self.intercept_fwd = 677.2736
+        self.slope_fwd = coeff["forward"]["slope"]
+        self.intercept_fwd = coeff["forward"]["intercept"]
         # for Reverse flow
-        self.slope_rev = 10.48651
-        self.intercept_rev = -578.7256
+        self.slope_rev = coeff["reverse"]["slope"]
+        self.intercept_rev = coeff["reverse"]["intercept"]
         # 풍량 측정 값 저장
-        self.measured_values = [[i, (self.slope_fwd * j + self.intercept_fwd) * self.num_fans] 
-                                if j < 50 else 
+        self.measured_values = [[i, (self.slope_fwd * j + self.intercept_fwd) * self.num_fans]
+                                if j < 50 else
                                 [i, (self.slope_rev * j + self.intercept_rev) * self.num_fans]
                                 for i, j in measured_data["measured_value"]]
 
@@ -286,8 +316,10 @@ if __name__ == '__main__':
     if data.get("depressurization") and data.get("pressurization"):
         calculation_raw["average"] = {}
         for i in ["Q50", "ACH50", "AL50"]:
-            calculation_raw["report"][i + "_avg"] = (calculation_raw["depressurization"][i] \
-                                                     + calculation_raw["pressurization"][i])/2
+            calculation_raw["report"][i + "_avg"] = (
+                calculation_raw["depressurization"][i]
+                + calculation_raw["pressurization"][i]
+            ) / 2
 
     with open(f"./calculation_raw.json", 'w') as file:
         json.dump(calculation_raw, file, indent=4)
