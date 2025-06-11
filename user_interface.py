@@ -1,4 +1,4 @@
-# -*- conding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import sys
 import json
 import time
@@ -22,7 +22,7 @@ if current_os == "Windows":
 else:
     test_mode = False
 
-class InputInitalValues(QWidget):
+class InputInitialValues(QWidget):
     def __init__(self):
         super().__init__()
         # 창 크기 고정
@@ -76,11 +76,11 @@ class InputInitalValues(QWidget):
             ("구조", "structure", "경량목구조")
         ]
         self.input_fields = {}
-        for row, (label_text, label_key, plcae_holder) in enumerate(labels):
+        for row, (label_text, label_key, placeholder) in enumerate(labels):
             label = QLabel(label_text)
             input_field = QLineEdit()
             # 플레이스홀더
-            input_field.setPlaceholderText(plcae_holder)
+            input_field.setPlaceholderText(placeholder)
             # 왼쪽 열에 라벨 추가
             layout.addWidget(label, row, 0)
             # 오른쪽 열에 입력 필드 추가
@@ -614,7 +614,7 @@ if __name__ == '__main__':
     time_to_close = 2
 
     # 시험 조건 입력
-    initialize = InputInitalValues()
+    initialize = InputInitialValues()
     initialize.setWindowTitle("시험 조건 입력")
     initialize.resize(size_w, size_h)
     initialize.show()
