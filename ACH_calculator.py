@@ -12,12 +12,12 @@ DEFAULT_COEFFICIENTS = {
         "reverse": {"slope": 9.21069, "intercept": 935.46713},
     },
     "low": {
-        "forward": {"slope": -12.0, "intercept": 560.0},
-        "reverse": {"slope": 8.5, "intercept": -480.0},
+        "forward": {"slope": 7.36855, "intercept": 748.3737},
+        "reverse": {"slope": 7.36855, "intercept": 748.3737},
     },
     "high": {
-        "forward": {"slope": -9.0, "intercept": 450.0},
-        "reverse": {"slope": 7.0, "intercept": -400.0},
+        "forward": {"slope": 5.52641, "intercept": 561.2803},
+        "reverse": {"slope": 5.52641, "intercept": 561.2803},
     },
 }
 
@@ -320,7 +320,5 @@ if __name__ == '__main__':
                 calculation_raw["depressurization"][i]
                 + calculation_raw["pressurization"][i]
             ) / 2
-
-    with open("./calculation_raw.json", "w") as file:
+    with open(f"./calculation_raw.json", 'w') as file:
         json.dump(calculation_raw, file, indent=4)
-
