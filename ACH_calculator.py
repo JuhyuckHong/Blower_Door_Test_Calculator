@@ -4,13 +4,13 @@ import statistics
 from pprint import pprint
 from scipy.stats import t
 from datetime import datetime
+import os
 
-FAN_COEFFICIENTS = {
+DEFAULT_COEFFICIENTS = {
     "none": {
         "forward": {"slope": -14.76092, "intercept": 677.2736},
         "reverse": {"slope": 10.48651, "intercept": -578.7256},
     },
-    # Placeholder values for fan covers. Adjust with real calibration data.
     "low": {
         "forward": {"slope": -12.0, "intercept": 560.0},
         "reverse": {"slope": 8.5, "intercept": -480.0},
@@ -20,6 +20,17 @@ FAN_COEFFICIENTS = {
         "reverse": {"slope": 7.0, "intercept": -400.0},
     },
 }
+
+
+def load_fan_coefficients(file_path="fan_coefficients.json"):
+    """Load fan calibration coefficients from a JSON file."""
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass
+    return DEFAULT_COEFFICIENTS
 
 
 '''
@@ -52,7 +63,8 @@ class BlowerDoorTestCalculator:
         self.cover = measured_data.get("fan_cover", "none").lower()
         self.num_fans = int(measured_data.get("fan_count", 2))
 
-        coeff = FAN_COEFFICIENTS.get(self.cover, FAN_COEFFICIENTS["none"])
+        fan_coeffs = load_fan_coefficients()
+        coeff = fan_coeffs.get(self.cover, fan_coeffs.get("none", DEFAULT_COEFFICIENTS["none"]))
         # for Forward flow
         self.slope_fwd = coeff["forward"]["slope"]
         self.intercept_fwd = coeff["forward"]["intercept"]
@@ -304,8 +316,11 @@ if __name__ == '__main__':
     if data.get("depressurization") and data.get("pressurization"):
         calculation_raw["average"] = {}
         for i in ["Q50", "ACH50", "AL50"]:
-            calculation_raw["report"][i + "_avg"] = (calculation_raw["depressurization"][i] \
-                                                     + calculation_raw["pressurization"][i])/2
+            calculation_raw["report"][i + "_avg"] = (
+                calculation_raw["depressurization"][i]
+                + calculation_raw["pressurization"][i]
+            ) / 2
 
-    with open(f"./calculation_raw.json", 'w') as file:
+    with open("./calculation_raw.json", "w") as file:
         json.dump(calculation_raw, file, indent=4)
+
