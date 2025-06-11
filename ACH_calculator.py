@@ -321,6 +321,5 @@ if __name__ == '__main__':
                 + calculation_raw["pressurization"][i]
             ) / 2
 
-    with open("./calculation_raw.json", "w") as file:
+    with open(f"./calculation_raw.json", 'w') as file:
         json.dump(calculation_raw, file, indent=4)
-
