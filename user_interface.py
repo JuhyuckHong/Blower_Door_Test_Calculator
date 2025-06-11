@@ -4,9 +4,10 @@ import json
 import time
 import shutil
 from datetime import datetime
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout
-from PyQt5.QtWidgets import QPushButton, QGridLayout, QCheckBox, QMainWindow, QMessageBox
-from PyQt5.QtWidgets import QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout,
+                             QPushButton, QGridLayout, QCheckBox, QMainWindow,
+                             QMessageBox, QTableWidget, QTableWidgetItem,
+                             QComboBox)
 from PyQt5.QtCore import QTimer, QPointF, Qt, QThread, pyqtSignal, QCoreApplication
 from PyQt5.QtChart import QChart, QChartView, QLineSeries, QValueAxis
 from PyQt5.QtGui import QFont, QFontDatabase, QPixmap
@@ -88,6 +89,22 @@ class InputInitialValues(QWidget):
             # 데이터 저장
             self.input_fields[label_key] = input_field
 
+        # Fan cover selection
+        row += 1
+        cover_label = QLabel("Fan Cover")
+        self.cover_combo = QComboBox()
+        self.cover_combo.addItems(["none", "low", "high"])
+        layout.addWidget(cover_label, row, 0)
+        layout.addWidget(self.cover_combo, row, 1)
+
+        # Fan count selection
+        row += 1
+        count_label = QLabel("Fan Count")
+        self.count_combo = QComboBox()
+        self.count_combo.addItems(["1", "2"])
+        layout.addWidget(count_label, row, 0)
+        layout.addWidget(self.count_combo, row, 1)
+
         # 체크박스 데이터
         self.checkbox_states = {}
 
@@ -133,6 +150,9 @@ class InputInitialValues(QWidget):
         for key, input_field in self.input_fields.items():
             value = input_field.text()
             data[key] = value
+        # Fan options
+        data["fan_cover"] = self.cover_combo.currentText()
+        data["fan_count"] = int(self.count_combo.currentText())
         # 체크박스 데이터 저장
         for key, checkbox in self.checkbox_states.items():
             data[key] = checkbox
