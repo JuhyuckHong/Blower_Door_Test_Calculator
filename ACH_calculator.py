@@ -5,6 +5,22 @@ from pprint import pprint
 from scipy.stats import t
 from datetime import datetime
 
+FAN_COEFFICIENTS = {
+    "none": {
+        "forward": {"slope": -14.76092, "intercept": 677.2736},
+        "reverse": {"slope": 10.48651, "intercept": -578.7256},
+    },
+    # Placeholder values for fan covers. Adjust with real calibration data.
+    "low": {
+        "forward": {"slope": -12.0, "intercept": 560.0},
+        "reverse": {"slope": 8.5, "intercept": -480.0},
+    },
+    "high": {
+        "forward": {"slope": -9.0, "intercept": 450.0},
+        "reverse": {"slope": 7.0, "intercept": -400.0},
+    },
+}
+
 
 '''
 measured_data = {
@@ -33,17 +49,19 @@ class BlowerDoorTestCalculator:
         self.val = dict()
         # PWM duty to Volumetric Flow rate calculation
         # OF-OD172SAP-Reversible Fan에만 해당하는 값임
-        # Fan의 개수
-        self.num_fans = 2
+        self.cover = measured_data.get("fan_cover", "none").lower()
+        self.num_fans = int(measured_data.get("fan_count", 2))
+
+        coeff = FAN_COEFFICIENTS.get(self.cover, FAN_COEFFICIENTS["none"])
         # for Forward flow
-        self.slope_fwd = -14.76092
-        self.intercept_fwd = 677.2736
+        self.slope_fwd = coeff["forward"]["slope"]
+        self.intercept_fwd = coeff["forward"]["intercept"]
         # for Reverse flow
-        self.slope_rev = 10.48651
-        self.intercept_rev = -578.7256
+        self.slope_rev = coeff["reverse"]["slope"]
+        self.intercept_rev = coeff["reverse"]["intercept"]
         # 풍량 측정 값 저장
-        self.measured_values = [[i, (self.slope_fwd * j + self.intercept_fwd) * self.num_fans] 
-                                if j < 50 else 
+        self.measured_values = [[i, (self.slope_fwd * j + self.intercept_fwd) * self.num_fans]
+                                if j < 50 else
                                 [i, (self.slope_rev * j + self.intercept_rev) * self.num_fans]
                                 for i, j in measured_data["measured_value"]]
 
