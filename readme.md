@@ -57,3 +57,26 @@ To control the fan using `pigpio` on a Raspberry Pi:
    sudo python3 user_interface.py
    ```
 
+## GUI Launch Shortcut on Raspberry Pi
+To start the GUI by double-clicking on the desktop:
+
+1. Ensure `user_interface.py` is executable:
+   ```bash
+   chmod +x /home/pi/Blower_Door_Test_Calculator/user_interface.py
+   ```
+2. Create `~/Desktop/user_interface.desktop` with the following content (update paths as needed):
+   ```ini
+   [Desktop Entry]
+   Type=Application
+   Name=BlowerDoorTest
+   Comment=Run blower door test GUI
+   Exec=sudo /usr/bin/python3 /home/pi/Blower_Door_Test_Calculator/user_interface.py
+   Icon=/home/pi/Blower_Door_Test_Calculator/icon.png
+   Terminal=true
+   ```
+3. Make it executable:
+   ```bash
+   chmod +x ~/Desktop/user_interface.desktop
+   ```
+Double-click the icon to run the GUI with root privileges.
+

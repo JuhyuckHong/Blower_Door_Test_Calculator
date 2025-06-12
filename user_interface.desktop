@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=BlowerDoorTest
+Comment=Run blower door test GUI
+Exec=sudo /usr/bin/python3 /home/pi/Blower_Door_Test_Calculator/user_interface.py
+Icon=/home/pi/Blower_Door_Test_Calculator/icon.png
+Terminal=true
+
