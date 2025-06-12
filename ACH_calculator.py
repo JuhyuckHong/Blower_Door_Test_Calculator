@@ -10,27 +10,33 @@ DEFAULT_COEFFICIENTS = {
     "none": {
         "forward": {"slope": 9.21069, "intercept": 935.46713},
         "reverse": {"slope": 9.21069, "intercept": 935.46713},
+        "duty_range": [20, 100],
     },
     "low": {
         "forward": {"slope": 7.36855, "intercept": 748.3737},
         "reverse": {"slope": 7.36855, "intercept": 748.3737},
+        "duty_range": [20, 100],
     },
     "high": {
         "forward": {"slope": 5.52641, "intercept": 561.2803},
         "reverse": {"slope": 5.52641, "intercept": 561.2803},
+        "duty_range": [20, 100],
     },
 }
 
 
 def load_fan_coefficients(file_path="fan_coefficients.json"):
     """Load fan calibration coefficients from a JSON file."""
+    coeffs = {k: v.copy() for k, v in DEFAULT_COEFFICIENTS.items()}
     if os.path.exists(file_path):
         with open(file_path, "r") as f:
             try:
-                return json.load(f)
+                data = json.load(f)
             except json.JSONDecodeError:
-                pass
-    return DEFAULT_COEFFICIENTS
+                data = {}
+        for cover, values in data.items():
+            coeffs.setdefault(cover, {}).update(values)
+    return coeffs
 
 
 '''
@@ -59,7 +65,7 @@ class BlowerDoorTestCalculator:
         # 계산 결과 저장을 위한 변수
         self.val = dict()
         # PWM duty to Volumetric Flow rate calculation
-        # OF-OD172SAP-Reversible Fan에만 해당하는 값임
+        # 9GV2048P0G201 fan only (formerly OF-OD172SAP-Reversible)
         self.cover = measured_data.get("fan_cover", "none").lower()
         self.num_fans = int(measured_data.get("fan_count", 2))
 

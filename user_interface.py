@@ -381,16 +381,18 @@ class BackgroundTask(QThread):
     def blower_door_test(self, test):
 
         # 측정 모드에 따른 변수 설정
-        # OF-OD172SAP-Reversible 팬에만 해당하는 값임
-        zero_duty = 50
-        if test == "depressurization":
-            # PWM 55~90
-            min_duty, max_duty = 55, 90
-            initial_duty = 56
-        elif test == "pressurization":
-            # PWM 10~45
-            min_duty, max_duty = 45, 10
-            initial_duty = 44
+        # 9GV2048P0G201 fan only (formerly OF-OD172SAP-Reversible)
+        zero_duty = 0
+
+        with open('conditions.json', 'r') as f:
+            conditions = json.load(f)
+        cover = conditions.get("fan_cover", "none").lower()
+        fan_coeffs = ACH_calculator.load_fan_coefficients()
+        coeff = fan_coeffs.get(cover, fan_coeffs.get("none", {}))
+
+        duty_range = coeff.get("duty_range", [20, 100])
+        min_duty, max_duty = duty_range
+        initial_duty = min_duty - 1
 
         # 측정
         measuring = {}
