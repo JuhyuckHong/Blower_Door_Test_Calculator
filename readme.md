@@ -36,3 +36,24 @@ The program proceeds in the following order:
 
 For headless environments or additional options refer to the source code.
 
+## Running on Raspberry Pi
+To control the fan using `pigpio` on a Raspberry Pi:
+
+1. Clone this repository and enter the project directory:
+   ```bash
+   git clone <repo-url>
+   cd Blower_Door_Test_Calculator
+   ```
+2. Install the `pigpio` daemon and enable it to start automatically:
+   ```bash
+   sudo apt update
+   sudo apt install pigpio
+   sudo systemctl enable pigpiod
+   sudo systemctl start pigpiod
+   ```
+3. Install the Python dependencies listed in `requirements.txt`.
+4. Run the GUI with root privileges so the program can access GPIO and serial ports:
+   ```bash
+   sudo python3 user_interface.py
+   ```
+
