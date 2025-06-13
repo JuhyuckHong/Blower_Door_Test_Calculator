@@ -105,6 +105,7 @@ The steps are:
 1. Convert each pressure difference $\Delta P$ and flow rate $\dot{V}$ to natural-log form. Least-squares regression of $\ln\Delta P$ versus $\ln\dot{V}$ yields the exponent $n$ and intercept $\ln C$.
 2. Compute air density and viscosity from temperature, humidity and barometric pressure. These correct $C$ to $C_0$ via
    $\displaystyle \frac{C_0}{C} = \left( \frac{\mu}{\mu_{\text{STP}}} \right)^{2n-1} \left( \frac{\rho}{\rho_{\text{STP}}} \right)^{1-n}$.
+
 3. Estimate the standard errors of `n` and `ln(C)` and apply the Student t-distribution to provide 95% confidence limits.
 4. Use the resulting coefficients to compute
    * `Q50` – the volumetric flow rate at 50 Pa,
