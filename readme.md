@@ -57,6 +57,33 @@ To control the fan using `pigpio` on a Raspberry Pi:
    sudo python3 user_interface.py
    ```
 
+## Offline Installation via USB
+If the Raspberry Pi cannot connect to the internet, prepare the software on a PC and transfer it with a USB drive.
+
+1. On a computer with internet access clone the repository and download the dependencies:
+   ```bash
+   git clone <repo-url>
+   cd Blower_Door_Test_Calculator
+   pip download -r requirements.txt -d packages
+   ```
+2. Copy the project directory and the `packages` folder to a USB drive.
+3. Attach the USB to the Raspberry Pi and copy the files:
+   ```bash
+   sudo mount /dev/sda1 /mnt  # adjust device path as needed
+   cp -r /mnt/Blower_Door_Test_Calculator ~/
+   cp -r /mnt/packages ~/
+   ```
+4. Install the dependencies offline:
+   ```bash
+   pip install --no-index --find-links ~/packages -r ~/Blower_Door_Test_Calculator/requirements.txt
+   ```
+5. Any additional `.deb` packages such as `pigpio` must also be copied beforehand and installed using `sudo dpkg -i package.deb`.
+
+After installation run the GUI normally:
+```bash
+sudo python3 ~/Blower_Door_Test_Calculator/user_interface.py
+```
+
 ## GUI Launch Shortcut on Raspberry Pi
 To start the GUI by double-clicking on the desktop:
 
