@@ -83,9 +83,9 @@ def duty_set(duty, test=True):
     # Connect to pigpio
     pi = pigpio.pi()
 
-    # Define the GPIO pin for PWM and the frequency in Hertz (25kHz)
+    # Define the GPIO pin for PWM and the frequency in Hertz (1kHz)
     gpio_pin = 18  # Example GPIO pin
-    frequency = 25000  # 25kHz
+    frequency = 1000  # 1kHz
 
     # Set the hardware PWM
     # The range of duty cycle is from 0 to 1,000,000 (representing 0% to 100%)
