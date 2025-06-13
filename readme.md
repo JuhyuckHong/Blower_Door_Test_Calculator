@@ -96,11 +96,15 @@ Running `python user_interface.py` executes these steps sequentially. Measuremen
 
 ## ACH_calculator Derivation
 `ACH_calculator.py` fits the measured data to the power-law model:
-\[ \dot V = C_0 \Delta P^n \]
+
+$$
+\dot{V} = C_0\,\Delta P^n
+$$
+
 The steps are:
-1. Convert each pressure difference and flow rate to natural-log form to obtain a linear relation. Least-squares regression of ln(\u0394P) vs ln(V\u0307) yields the exponent `n` and intercept `ln(C)`.
-2. Compute air density and viscosity from temperature, humidity and barometric pressure. These correct `C` to `C0` via
-   \(C_0/C = (\mu/\mu_{STP})^{2n-1} (\rho/\rho_{STP})^{1-n}\).
+1. Convert each pressure difference $\Delta P$ and flow rate $\dot{V}$ to natural-log form. Least-squares regression of $\ln\Delta P$ versus $\ln\dot{V}$ yields the exponent $n$ and intercept $\ln C$.
+2. Compute air density and viscosity from temperature, humidity and barometric pressure. These correct $C$ to $C_0$ via
+   $\displaystyle \frac{C_0}{C} = \left( \frac{\mu}{\mu_{\text{STP}}} \right)^{2n-1} \left( \frac{\rho}{\rho_{\text{STP}}} \right)^{1-n}$.
 3. Estimate the standard errors of `n` and `ln(C)` and apply the Student t-distribution to provide 95% confidence limits.
 4. Use the resulting coefficients to compute
    * `Q50` – the volumetric flow rate at 50 Pa,
