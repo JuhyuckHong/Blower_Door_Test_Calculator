@@ -616,6 +616,10 @@ class BackgroundTask(QThread):
 
 
 if __name__ == '__main__':
+    # Ensure the fan PWM duty is zero on startup so that the fan does not run
+    # even if powered. This provides a safe default state before any test begins.
+    sensor_and_controller.duty_set(0, test=test_mode)
+
     app = QApplication(sys.argv)
 
     # 창 사이즈 설정
