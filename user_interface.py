@@ -5,13 +5,31 @@ import json
 import time
 import shutil
 from datetime import datetime
-from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QVBoxLayout,
-                             QPushButton, QGridLayout, QCheckBox, QMainWindow,
-                             QMessageBox, QTableWidget, QTableWidgetItem,
-                             QComboBox)
-from PyQt5.QtCore import QTimer, QPointF, Qt, QThread, pyqtSignal, QCoreApplication
-from PyQt5.QtChart import QChart, QChartView, QLineSeries, QValueAxis
-from PyQt5.QtGui import QFont, QFontDatabase, QPixmap
+from PyQt6.QtWidgets import (
+    QApplication,
+    QWidget,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+    QPushButton,
+    QGridLayout,
+    QCheckBox,
+    QMainWindow,
+    QMessageBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QComboBox,
+)
+from PyQt6.QtCore import (
+    QTimer,
+    QPointF,
+    Qt,
+    QThread,
+    pyqtSignal,
+    QCoreApplication,
+)
+from PyQt6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
+from PyQt6.QtGui import QFont, QFontDatabase, QPixmap
 import ACH_calculator
 import graph_plotter
 import reporting
@@ -190,8 +208,8 @@ class LivePressureData(QMainWindow):
         self.axis_x.setTitleText("Time (s)")
         self.axis_y.setTitleText("Pressure (Pa)")
 
-        self.chart.addAxis(self.axis_x, Qt.AlignBottom)
-        self.chart.addAxis(self.axis_y, Qt.AlignLeft)
+        self.chart.addAxis(self.axis_x, Qt.AlignmentFlag.AlignBottom)
+        self.chart.addAxis(self.axis_y, Qt.AlignmentFlag.AlignLeft)
 
         self.series.attachAxis(self.axis_x)
         self.series.attachAxis(self.axis_y)
@@ -249,7 +267,7 @@ class SimpleMessageAutoDisappear(QMainWindow):
         # QLabel을 창의 중앙 위젯으로 설정
         self.setCentralWidget(self.label)
         # 글자 중간 정렬
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # 남은 닫히기까지의 시간을 10으로 초기화
         self.time_to_close = time_to_close
         # 메시지 업데이트 메서드 호출
@@ -274,7 +292,7 @@ class SimpleMessage(QMainWindow):
         # QLabel 위젯 생성
         self.label = QLabel(initial_message, self)
         # 글자 중간 정렬
-        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # QLabel을 창의 중앙 위젯으로 설정
         self.setCentralWidget(self.label)
 
@@ -291,7 +309,7 @@ class ResultImageWindow(QWidget):
         
         # 이미지 파일을 QPixmap으로 로드
         pixmap = QPixmap(image_path)
-        pixmap = pixmap.scaled(size_w, size_h, Qt.KeepAspectRatio)
+        pixmap = pixmap.scaled(size_w, size_h, Qt.AspectRatioMode.KeepAspectRatio)
         
         # QLabel에 QPixmap 설정
         self.label.setPixmap(pixmap)
@@ -645,7 +663,7 @@ if __name__ == '__main__':
     initialize.setWindowTitle("시험 조건 입력")
     initialize.resize(size_w, size_h)
     initialize.show()
-    app.exec_()
+    app.exec()
 
     # 시험 조건 불러오기
     with open('conditions.json', 'r') as file:
@@ -662,7 +680,7 @@ if __name__ == '__main__':
         pressure.setWindowTitle("감압 시험 준비")
         pressure.resize(size_w, size_h)
         pressure.show()
-        app.exec_()
+        app.exec()
         ###################    
         ## 데이터 측정 시작 with depressurization 파일명
         ###################    
@@ -673,12 +691,12 @@ if __name__ == '__main__':
         wait_for_end = BackgroundTask("depressurization")
         wait_for_end.finished.connect(message.close)
         wait_for_end.start()    
-        app.exec_()
+        app.exec()
         # 측정 종료
         end_of_test = SimpleMessageAutoDisappear("감압 시험 측정 완료.", time_to_close)
         end_of_test.resize(size_w, size_h)
         end_of_test.show()
-        app.exec_()
+        app.exec()
 
     # 가압 시험
     if data.get("pressurization"):
@@ -688,7 +706,7 @@ if __name__ == '__main__':
         pressure.setWindowTitle("가압시험 준비")
         pressure.resize(size_w, size_h)
         pressure.show()
-        app.exec_()
+        app.exec()
         ###################    
         ## 데이터 측정 시작 with pressurization 파일명
         ###################
@@ -699,12 +717,12 @@ if __name__ == '__main__':
         wait_for_end = BackgroundTask("pressurization")
         wait_for_end.finished.connect(message.close)
         wait_for_end.start()    
-        app.exec_()    
+        app.exec()    
         # 측정 종료
         end_of_test = SimpleMessageAutoDisappear("가압 시험 측정 완료.", time_to_close)
         end_of_test.resize(size_w, size_h)
         end_of_test.show()
-        app.exec_()
+        app.exec()
 
     # 측정 종료 시간 저장
     time_end = datetime.now().strftime("%H:%M:%S")
@@ -724,12 +742,12 @@ if __name__ == '__main__':
     wait_for_end = BackgroundTask("calculation")
     wait_for_end.finished.connect(message.close)
     wait_for_end.start()    
-    app.exec_()
+    app.exec()
     # 계산 종료
     end_of_test = SimpleMessageAutoDisappear("시험 결과 계산 완료.", time_to_close)
     end_of_test.resize(size_w, size_h)
     end_of_test.show()
-    app.exec_()
+    app.exec()
 
     ###################
     ## 그래프 작성 코드 실행
@@ -744,12 +762,12 @@ if __name__ == '__main__':
     wait_for_end = BackgroundTask("graph_plotting")
     wait_for_end.finished.connect(message.close)
     wait_for_end.start()    
-    app.exec_()
+    app.exec()
     # 그래프 작성 종료
     end_of_test = SimpleMessageAutoDisappear("그래프 작성 완료.", time_to_close)
     end_of_test.resize(size_w, size_h)
     end_of_test.show()
-    app.exec_()
+    app.exec()
 
     ###################
     ## 보고서 생성 코드 실행
@@ -763,15 +781,15 @@ if __name__ == '__main__':
     wait_for_end = BackgroundTask("reporting")
     wait_for_end.finished.connect(message.close)
     wait_for_end.start()    
-    app.exec_()
+    app.exec()
     # 보고서 생성 종료
     end_of_test = SimpleMessageAutoDisappear("보고서 생성 완료.", time_to_close)
     end_of_test.resize(size_w, size_h)
     end_of_test.show()
-    app.exec_()
+    app.exec()
 
     # 시험 종료
     end_of_test = SimpleMessageAutoDisappear("시험이 모두 종료되었습니다.", time_to_close)
     end_of_test.resize(size_w, size_h)
     end_of_test.show()
-    app.exec_()
+    app.exec()
