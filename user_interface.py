@@ -644,12 +644,10 @@ if __name__ == '__main__':
     size_w = 800
     size_h = 400
     # 폰트 설정
-    font_db = QFontDatabase()
-    # 글꼴 파일 경로
-    font_id = font_db.addApplicationFont("./NanumSquare_acL.ttf")  
+    font_id = QFontDatabase.addApplicationFont("./NanumSquare_acL.ttf")
 
     if font_id != -1:
-        font_families = font_db.applicationFontFamilies(font_id)
+        font_families = QFontDatabase.applicationFontFamilies(font_id)
         # 로드한 글꼴의 첫 번째 패밀리를 사용
         app.setFont(QFont(font_families[0], 9))
     else:
