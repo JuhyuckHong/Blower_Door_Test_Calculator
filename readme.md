@@ -13,9 +13,13 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
    git clone <repo-url>
    cd Blower_Door_Test_Calculator
    ```
-2. Install dependencies
+2. Install dependencies (Raspberry Pi)
    ```bash
-   pip install -r requirements.txt
+   sudo ./install_deps_apt.sh
+   ```
+   On other systems you may still use pip:
+   ```bash
+   pip3 install -r requirements.txt
    ```
 
 ## Hardware Requirements
@@ -51,7 +55,10 @@ To control the fan using `pigpio` on a Raspberry Pi:
    sudo systemctl enable pigpiod
    sudo systemctl start pigpiod
    ```
-3. Install the Python dependencies listed in `requirements.txt`.
+3. Install the Python dependencies using apt:
+   ```bash
+   sudo ./install_deps_apt.sh
+   ```
 4. Run the GUI with root privileges so the program can access GPIO and serial ports:
    ```bash
    sudo python3 user_interface.py
@@ -154,9 +161,13 @@ Blower Door Test Calculator는 블로어 도어 테스트를 통해 건물의 �
    git clone <repo-url>
    cd Blower_Door_Test_Calculator
    ```
-2. 의존성을 설치합니다.
+2. 의존성을 설치합니다 (Raspberry Pi 기준)
    ```bash
-   pip install -r requirements.txt
+   sudo ./install_deps_apt.sh
+   ```
+   다른 시스템에서는 pip 사용도 가능합니다:
+   ```bash
+   pip3 install -r requirements.txt
    ```
 
 ### 하드웨어 요구 사항
@@ -192,7 +203,10 @@ Raspberry Pi에서 `pigpio`를 사용해 팬을 제어하려면 다음 단계를
    sudo systemctl enable pigpiod
    sudo systemctl start pigpiod
    ```
-3. `requirements.txt`에 명시된 파이썬 의존성을 설치합니다.
+3. 의존성은 `apt`로 설치합니다:
+   ```bash
+   sudo ./install_deps_apt.sh
+   ```
 4. GPIO와 시리얼 포트 접근을 위해 루트 권한으로 GUI를 실행합니다.
    ```bash
    sudo python3 user_interface.py
